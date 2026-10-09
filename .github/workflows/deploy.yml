@@ -1,0 +1,43 @@
+# Déploiement FTP à chaque push sur main ou master.
+# Secrets du dépôt GitHub : FTP_HOST, FTP_USER, FTP_PASS.
+# FTP_HOST peut préciser le port : ftp.exemple.fr:21
+# Le fichier .env et la base SQLite du serveur ne sont pas écrasés.
+
+name: Deploy FTP
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: ftp-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Envoi FTP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Envoyer sur le serveur
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          protocol: ftp
+          log-level: standard
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/.env
+            **/.env.*
+            **/storage/*.sqlite
+            **/storage/*.sqlite-*
+            **/storage/logs/**

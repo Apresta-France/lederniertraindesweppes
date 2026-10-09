@@ -1,0 +1,25 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Fichiers cachés (.env, .git…)
+    RewriteRule (^|/)\. - [F,L]
+
+    # Code applicatif, données et maquette d'origine
+    RewriteRule ^(app|storage|site-export)(/|$) - [F,L]
+
+    # Le jeu vit dans son propre dossier, hors du routeur du site
+    RewriteRule ^jouer(/|$) - [L]
+
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+<FilesMatch "\.(env|sqlite|sqlite-journal|sqlite-wal|sqlite-shm|log|eml|md)$">
+    Require all denied
+</FilesMatch>

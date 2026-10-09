@@ -1,0 +1,16 @@
+.env
+.env.bak
+jouer/.env
+storage/*.sqlite
+storage/*.sqlite-journal
+storage/*.sqlite-wal
+storage/*.sqlite-shm
+storage/logs/*
+!storage/logs/.gitkeep
+!storage/.gitkeep
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log

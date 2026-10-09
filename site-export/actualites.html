@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actualités — Le Dernier Train des Weppes</title>
+<meta name="description" content="Le carnet de développement du Dernier Train des Weppes.">
+<meta property="og:title" content="Actualités — Le Dernier Train des Weppes">
+<meta property="og:description" content="Le carnet de développement du Dernier Train des Weppes.">
+<meta property="og:image" content="assets/img/gare.png">
+<link rel="icon" href="assets/img/logo-tercium.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Marcellus&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+<header class="hd">
+  <a class="brand" href="index.html"><b>Le Dernier Train des Weppes</b><small>Groupe Tercium</small></a>
+  <nav class="nav" aria-label="Navigation principale"><a href="le-jeu.html">Le jeu</a><a href="avancement.html">Avancement</a><a href="actualites.html" aria-current="page">Actualités</a><a href="partenaires.html">Partenaires</a><a href="contact.html">Contact</a><a class="cta" href="#waitlist">Liste d'attente</a></nav>
+  <div class="hd-m"><a class="cta" href="#waitlist">Liste d'attente</a><button class="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+  <nav class="drawer" aria-label="Navigation mobile"><a href="le-jeu.html">Le jeu</a><a href="avancement.html">Avancement</a><a href="actualites.html" aria-current="page">Actualités</a><a href="partenaires.html">Partenaires</a><a href="contact.html">Contact</a></nav>
+</header>
+<main>
+
+<section class="wrap stack" style="padding-top:clamp(56px,8vw,100px);gap:16px"><div class="eyebrow rise d1">Actualités</div><h1 class="h1 rise d2" style="font-size:clamp(32px,5vw,60px)">Carnet de développement</h1><p class="small rise d3" style="font-size:clamp(16px,1.6vw,19px)">Les coulisses du jeu, au fil des étapes.</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px"><button class="pill on" data-filter="Tout">Tout</button><button class="pill" data-filter="Acte 1">Acte 1</button><button class="pill" data-filter="Cinématique">Cinématique</button><button class="pill" data-filter="Prototype">Prototype</button></div></section>
+<section class="wrap" style="padding-top:36px;padding-bottom:clamp(72px,10vw,120px)"><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))"><a class="card" href="article-chambre-de-gisele.html" data-cat="Acte 1"><img src="assets/img/chambre-gisele.png" alt="" loading="lazy"><div class="card-b"><div class="meta">Octobre 2026 · Acte 1</div><h3 class="h3">La chambre de Gisèle prend vie</h3><p class="small">Premier décor jouable : la télévision, le bouton d'appel, l'horloge arrêtée et une boîte en fer qui garde son secret.</p><div class="link" style="margin-top:4px">Lire l'article →</div></div></a><a class="card" href="article-horloge.html" data-cat="Cinématique"><img src="assets/img/horloge.png" alt="" loading="lazy"><div class="card-b"><div class="meta">Octobre 2026 · Cinématique</div><h3 class="h3">L'horloge s'est remise en marche</h3><p class="small">La cinématique d'ouverture est terminée : l'orage, l'effondrement de la gare et une horloge qui repart d'elle-même.</p><div class="link" style="margin-top:4px">Lire l'article →</div></div></a><a class="card" href="article-premier-prototype.html" data-cat="Prototype"><img src="assets/img/gare.png" alt="" loading="lazy"><div class="card-b"><div class="meta">Septembre 2026 · Prototype</div><h3 class="h3">Premier prototype jouable</h3><p class="small">Le jeu s'ouvre dans le navigateur : écran d'accueil, menu animé, musique et sauvegarde de partie.</p><div class="link" style="margin-top:4px">Lire l'article →</div></div></a></div></section>
+<section class="waitlist" id="waitlist">
+  <img src="assets/img/plaine.png" alt="" loading="lazy">
+  <div class="wrap">
+    <div class="eyebrow">Liste d'attente</div>
+    <h2 class="h2">Soyez parmi les premiers à monter à bord</h2>
+    <p class="body" style="font-size:17px;line-height:1.6">Le prototype n'est pas encore ouvert au public. Inscrivez-vous pour y accéder en avant-première et suivre l'avancement du jeu.</p>
+    <form class="wl" novalidate><input type="email" name="email" placeholder="Votre adresse e-mail" aria-label="Adresse e-mail" autocomplete="email"><button class="btn" type="submit">M'inscrire</button></form>
+    <div class="err"></div>
+    <div class="ok" hidden>Merci, vous êtes sur la liste. Nous vous écrirons dès l'ouverture du quai.</div>
+  </div>
+</section>
+</main>
+<footer class="ft"><div class="wrap">
+  <a class="tercium" href="https://tercium.fr" target="_blank" rel="noopener"><img src="assets/img/logo-tercium.png" alt="Groupe Tercium"><span>Propulsé par <span style="color:var(--gold)">Groupe Tercium</span></span></a>
+  <nav><a href="index.html">Accueil</a><a href="le-jeu.html">Le jeu</a><a href="avancement.html">Avancement</a><a href="actualites.html">Actualités</a><a href="partenaires.html">Partenaires</a><a href="contact.html">Contact</a><a href="#waitlist" style="color:var(--gold)">Liste d'attente</a></nav>
+  <div style="font-size:12px;color:var(--dim)">© 2026 Groupe Tercium</div>
+</div></footer>
+<script src="js/site.js"></script>
+</body>
+</html>
