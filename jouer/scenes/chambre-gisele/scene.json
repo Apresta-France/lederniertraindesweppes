@@ -108,7 +108,11 @@
         { "do": "say", "byState": "bouton", "texts": {
           "eteint": "Le bouton d'appel. Le voyant est éteint.",
           "allume": "Le voyant rouge s'allume. Quelqu'un devrait venir."
-        } }
+        } },
+        { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [
+          { "do": "wait", "ms": 2000 },
+          { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [{ "do": "voice", "src": "assets/jarrive_gisele.mp3", "subtitle": "J'arrive, Gisèle !" }] }
+        ] }
       ]
     },
     { "id": "deambulateur", "name": "Le déambulateur", "rect": [1393, 429, 114, 308], "sprite": "assets/deambulateur.png", "description": "Le déambulateur de Gisèle, rangé près du fauteuil.",
@@ -117,7 +121,8 @@
       "onUse": [{ "do": "voice", "src": "assets/plante.mp3" }, { "do": "say", "text": "Quelqu'un l'arrose régulièrement." }] },
     { "id": "porte", "name": "La porte du couloir", "rect": [1538, 0, 134, 941], "sprite": "assets/porte_ouverte.png", "description": "La porte est ouverte sur le couloir de la résidence.",
       "onUse": [{ "do": "voice", "src": "assets/porte.mp3" }, { "do": "say", "text": "La porte est ouverte sur le couloir de la résidence." }] },
-    { "id": "commode", "name": "La commode", "rect": [440, 408, 252, 190], "description": "Une commode en bois ciré, un napperon de dentelle." }
+    { "id": "commode", "name": "La commode", "rect": [440, 408, 252, 190], "description": "Une commode en bois ciré, un napperon de dentelle.",
+      "onUse": [{ "do": "voice", "src": "assets/commode.mp3" }, { "do": "say", "text": "Une commode en bois ciré, un napperon de dentelle." }] }
   ],
   "panels": {
     "boite": {

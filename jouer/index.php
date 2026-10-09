@@ -170,7 +170,7 @@ $motes = static function (int $count): string {
 
         <div class="panel-body" data-panel="options">
           <button type="button" class="opt-row" data-toggle="sound" role="switch" aria-checked="true"><span>Son</span><span class="switch" data-switch="sound" aria-hidden="true"><span class="knob"></span></span></button>
-          <label class="opt-slider"><span class="opt-line"><span>Musique d'ambiance</span><span class="muted" id="music-val">60</span></span><input type="range" min="0" max="100" id="music"></label>
+          <label class="opt-slider"><span class="opt-line"><span>Musique d'ambiance</span><span class="muted" id="music-val">50</span></span><input type="range" min="0" max="100" id="music"></label>
           <label class="opt-slider"><span class="opt-line"><span>Voix</span><span class="muted" id="voice-val">100</span></span><input type="range" min="0" max="100" id="voice"></label>
           <label class="opt-slider"><span class="opt-line"><span>Effets</span><span class="muted" id="sfx-val">80</span></span><input type="range" min="0" max="100" id="sfx"></label>
           <button type="button" class="opt-row" data-toggle="reduceMotion" role="switch" aria-checked="false"><span class="opt-stack"><span>Réduire les effets visuels</span><span class="small muted">Atténue les éclairs, secousses et animations</span></span><span class="switch" data-switch="reduceMotion" aria-hidden="true"><span class="knob"></span></span></button>

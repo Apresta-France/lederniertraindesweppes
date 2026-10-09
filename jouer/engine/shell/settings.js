@@ -11,7 +11,7 @@ export class Settings extends Emitter {
     this.values = {
       sound: true,
       consent: true,
-      music: 60,
+      music: 50,
       voice: 100,
       sfx: 80,
       reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
