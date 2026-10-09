@@ -66,8 +66,8 @@ final class Installer
                 $errors[] = 'Le mot de passe administrateur ne correspond pas au compte déjà créé.';
             }
         } else {
-            if (strlen($password) < 10) {
-                $errors[] = 'Le mot de passe administrateur doit contenir au moins 10 caractères.';
+            if ($password === '') {
+                $errors[] = 'Indiquez un mot de passe administrateur.';
             }
             if ($password !== $confirm) {
                 $errors[] = 'La confirmation du mot de passe ne correspond pas.';

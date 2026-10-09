@@ -52,7 +52,6 @@ $val = static function (string $key) use ($input): string {
       <label class="field"><?= $existingEmail ? 'Mot de passe du compte existant' : 'Mot de passe' ?><input type="password" name="admin_password" autocomplete="<?= $existingEmail ? 'current-password' : 'new-password' ?>" required></label>
       <?php if (!$existingEmail): ?>
         <label class="field">Confirmation<input type="password" name="admin_password_confirm" autocomplete="new-password" required></label>
-        <p class="small">Au moins 10 caractères.</p>
       <?php endif; ?>
     </section>
     <section class="panel stack">
