@@ -25,6 +25,21 @@ $field = static function (string $postKey, string $envKey) use ($input, $config)
     </label>
   </section>
   <section class="panel stack">
+    <h2 class="h3">Jeu</h2>
+    <p class="small">Le mode debug affiche dans le jeu un panneau (touche ²) pour passer directement d'une scène à l'autre. En automatique, il est actif seulement en environnement local.</p>
+    <?php if (!empty($gameDebugLocked)): ?>
+      <p class="small">Attention : GAME_DEBUG est défini dans jouer/.env et prend le pas sur ce réglage.</p>
+    <?php endif; ?>
+    <label class="field">Mode debug
+      <select name="game_debug">
+        <?php $gameDebug = $field('game_debug', 'GAME_DEBUG') ?: 'auto'; ?>
+        <?php foreach (['auto' => 'Automatique', 'on' => 'Activé', 'off' => 'Désactivé'] as $key => $label): ?>
+          <option value="<?= e($key) ?>"<?= $gameDebug === $key ? ' selected' : '' ?>><?= e($label) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </label>
+  </section>
+  <section class="panel stack">
     <h2 class="h3">Courriel</h2>
     <p class="small">Laissez le mot de passe vide pour conserver celui déjà enregistré. Le serveur log écrit les messages dans storage/logs.</p>
     <label class="field">Serveur SMTP<input name="smtp_host" value="<?= e($field('smtp_host', 'SMTP_HOST')) ?>"></label>

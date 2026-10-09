@@ -129,6 +129,10 @@ final class Installer
         if (!in_array($env, ['local', 'production'], true)) {
             $errors[] = 'Choisissez l\'environnement local ou production.';
         }
+        $gameDebug = (string) ($post['game_debug'] ?? ($current['GAME_DEBUG'] ?? 'auto'));
+        if (!in_array($gameDebug, ['auto', 'on', 'off'], true)) {
+            $errors[] = 'Choisissez le mode debug du jeu.';
+        }
         $smtpHost = single_line((string) ($post['smtp_host'] ?? ''), 180);
         if ($smtpHost === '' || str_contains($smtpHost, ' ')) {
             $errors[] = 'Indiquez le serveur SMTP, ou log pour un journal local.';
@@ -183,6 +187,7 @@ final class Installer
             'APP_NAME' => $name,
             'APP_KEY' => ($current['APP_KEY'] ?? '') !== '' ? (string) $current['APP_KEY'] : bin2hex(random_bytes(32)),
             'DB_PATH' => 'storage/database.sqlite',
+            'GAME_DEBUG' => $gameDebug,
             'SMTP_HOST' => $smtpHost,
             'SMTP_PORT' => (string) $port,
             'SMTP_ENCRYPTION' => $encryption,

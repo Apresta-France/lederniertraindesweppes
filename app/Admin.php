@@ -199,6 +199,7 @@ final class Admin
             'admin' => Auth::user(),
             'errors' => [],
             'input' => null,
+            'gameDebugLocked' => self::gameDebugLocked(),
         ]);
     }
 
@@ -213,6 +214,7 @@ final class Admin
                 'admin' => Auth::user(),
                 'errors' => $result['errors'],
                 'input' => $_POST,
+                'gameDebugLocked' => self::gameDebugLocked(),
             ]);
             return;
         }
@@ -273,6 +275,12 @@ final class Admin
         );
         flash('ok', 'Compte administrateur mis à jour.');
         redirect('/admin/environnement');
+    }
+
+    private static function gameDebugLocked(): bool
+    {
+        require_once ROOT . '/jouer/config.php';
+        return array_key_exists('GAME_DEBUG', jeu_env_file(ROOT . '/jouer/.env'));
     }
 
     private static function view(string $view, string $title, string $section, array $data): void

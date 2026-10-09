@@ -8,12 +8,12 @@ return [
     'gallery' => [
         ['src' => 'assets/img/orage.png', 'alt' => 'L\'orage sur Fournes-en-Weppes'],
         ['src' => 'assets/img/gare-nuit.png', 'alt' => 'La gare dans la nuit'],
-        ['src' => 'assets/img/plaque-fournes.png', 'alt' => 'La plaque FOURNES'],
         ['src' => 'assets/img/effondrement.png', 'alt' => 'L\'effondrement'],
         ['src' => 'assets/img/horloge.png', 'alt' => 'L\'horloge de la gare'],
-        ['src' => 'assets/img/plaine.png', 'alt' => 'La plaine au petit matin'],
         ['src' => 'assets/img/residence-portail.png', 'alt' => 'La résidence des Weppes'],
-        ['src' => 'assets/img/residence-couloir.png', 'alt' => 'Le couloir vers la chambre'],
+        ['src' => 'assets/img/aurelie.jpg', 'alt' => 'Aurélie', 'sheet' => true],
+        ['src' => 'assets/img/sandrine.jpg', 'alt' => 'Sandrine', 'sheet' => true],
+        ['src' => 'assets/img/eclusier.jpg', 'alt' => 'L\'éclusier, 1914', 'sheet' => true],
     ],
     'steps' => [
         [

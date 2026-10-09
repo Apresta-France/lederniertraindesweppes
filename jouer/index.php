@@ -6,7 +6,7 @@ require __DIR__ . '/config.php';
 
 $game = json_decode((string) @file_get_contents(__DIR__ . '/game.json'), true) ?: [];
 $version = (string) ($game['version'] ?? '0');
-$debug = jeu_env('GAME_DEBUG', jeu_env('GAME_ENV', 'production') === 'local' ? 'on' : 'off') === 'on';
+$debug = jeu_debug_enabled();
 $asset = static fn (string $path): string => htmlspecialchars($path . '?v=' . rawurlencode($version), ENT_QUOTES, 'UTF-8');
 
 header('Content-Type: text/html; charset=utf-8');

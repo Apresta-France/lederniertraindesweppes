@@ -15,8 +15,9 @@ const HELP = [
   "Cliquez sur un objet pour l'examiner. Certains changent d'état, d'autres s'ouvrent en grand.",
   "Les objets ramassés rejoignent l'inventaire, en bas de l'écran. Cliquez dessus pour les examiner.",
   "Le carnet garde vos objectifs et vos découvertes.",
-  "Échap ferme une fenêtre ouverte.",
+  "Échap ferme une fenêtre ouverte, ou ouvre le menu (son, volume, sauvegarde).",
 ];
+const VOLUMES = [['music', 'Musique'], ['voice', 'Voix'], ['sfx', 'Effets']];
 
 const masks = new Map();
 function alphaMask(url, w, h) {
@@ -216,7 +217,10 @@ export class ExploreScene extends Scene {
     this.listen(this.frame, 'mouseleave', () => { this.setHot(null); this.tip.classList.remove('on'); });
     this.listen(this.frame, 'click', e => this.onClick(e));
     this.listen(window, 'keydown', e => {
-      if (e.key === 'Escape' && this.overlay.isOpen) { e.stopPropagation(); this.overlay.close(); }
+      if (e.key !== 'Escape' || e.repeat) return;
+      e.stopPropagation();
+      if (this.overlay.isOpen) this.overlay.close();
+      else { this.game.audio.ui('select'); this.showPause(); }
     }, true);
     this.hotspots.forEach(b => {
       b.addEventListener('click', () => this.use(b.dataset.id));
@@ -225,7 +229,7 @@ export class ExploreScene extends Scene {
       b.addEventListener('keydown', e => this.onHotspotKey(e, b));
     });
     const $ = s => this.el.querySelector(s);
-    $('.room-menu').addEventListener('click', () => { this.game.audio.ui('select'); this.game.shell.toMenu(); });
+    $('.room-menu').addEventListener('click', () => { this.game.audio.ui('select'); this.showPause(); });
     $('.room-carnet').addEventListener('click', () => { this.game.audio.ui('click'); this.showCarnet(); });
     $('.room-help').addEventListener('click', () => { this.game.audio.ui('click'); this.showHelp(); });
     $('.room-slots').addEventListener('click', e => {
@@ -235,7 +239,14 @@ export class ExploreScene extends Scene {
       this.game.audio.ui('soft');
       this.say(it.name, it.desc);
     });
-    this.el.querySelector('.room-card').addEventListener('click', e => this.onCardClick(e));
+    $('.room-card').addEventListener('click', e => this.onCardClick(e));
+    $('.room-card').addEventListener('input', e => {
+      const r = e.target.closest('[data-volume]');
+      if (!r) return;
+      this.game.settings.set({ [r.dataset.volume]: +r.value });
+      if (r.dataset.volume === 'sfx') this.game.audio.ui('hover');
+      this.refreshPause();
+    });
 
     this.cleanups.push(this.game.state.on('change', ev => this.onStateChange(ev)));
     this.cleanups.push(this.game.on('debug', () => this.applyDebug()));
@@ -523,6 +534,8 @@ export class ExploreScene extends Scene {
 
   onCardClick(e) {
     if (e.target.closest('[data-close]')) { this.overlay.close(); return; }
+    const pause = e.target.closest('[data-pause]');
+    if (pause) { this.pauseAction(pause.dataset.pause); return; }
     const btn = e.target.closest('[data-action]');
     if (!btn || !this.openPanelId) return;
     const action = this.visiblePanelActions()[+btn.dataset.action];
@@ -610,5 +623,60 @@ export class ExploreScene extends Scene {
       <ul class="room-list">${HELP.map(h => `<li>${esc(h)}</li>`).join('')}</ul>
       <div class="room-acts"><button type="button" class="room-btn" data-close>Compris</button></div>
     </div>`, { single: true, label: 'Aide' });
+  }
+
+  showPause() {
+    const s = this.game.settings.values;
+    this.openPanelId = null;
+    this.panelNoteText = '';
+    this.hideSay();
+    this.tip.classList.remove('on');
+    const ranges = VOLUMES.map(([id, label]) => `<label class="room-range"><span class="room-range-l"><span>${label}</span><span class="v">${s[id]}</span></span><input type="range" min="0" max="100" value="${s[id]}" data-volume="${id}"></label>`).join('');
+    this.overlay.open(`<div class="room-info">
+      <div class="k">Menu</div><h3>Pause</h3><div class="room-orn"><b></b><i></i><b></b></div>
+      <button type="button" class="room-opt" data-pause="sound" role="switch" aria-checked="${!!s.sound}"><span>Son</span><span class="room-switch" aria-hidden="true"></span></button>
+      <div class="room-ranges" role="group" aria-label="Volume">${ranges}</div>
+      <div class="room-note" role="status"></div>
+      <div class="room-acts room-acts--col">
+        <button type="button" class="room-btn" data-close>Reprendre</button>
+        <button type="button" class="room-btn ghost" data-pause="save">Sauvegarder</button>
+        <button type="button" class="room-btn ghost" data-pause="quit">Revenir au menu principal</button>
+      </div>
+    </div>`, { single: true, label: 'Menu' });
+    this.refreshPause();
+  }
+
+  refreshPause() {
+    const card = this.el.querySelector('.room-card'), s = this.game.settings.values;
+    const sw = card.querySelector('[data-pause="sound"]');
+    if (!sw) return;
+    sw.setAttribute('aria-checked', String(!!s.sound));
+    card.querySelector('.room-ranges').classList.toggle('off', !s.sound);
+    card.querySelectorAll('[data-volume]').forEach(r => {
+      r.value = s[r.dataset.volume];
+      r.closest('.room-range').querySelector('.v').textContent = s[r.dataset.volume];
+    });
+  }
+
+  pauseAction(id) {
+    const { game } = this;
+    if (id === 'sound') {
+      const on = !game.settings.values.sound;
+      game.settings.set({ sound: on });
+      if (on) { game.audio.unlock(); game.audio.ui('click'); }
+      this.refreshPause();
+      this.announce(on ? 'Son activé' : 'Son coupé');
+    } else if (id === 'save') {
+      const ok = game.save();
+      game.audio.ui(ok ? 'ding' : 'soft');
+      const text = ok ? 'Partie sauvegardée.' : 'Sauvegarde impossible : le cookie de sauvegarde est désactivé dans les options.';
+      this.panelNote(text);
+      this.announce(text);
+    } else if (id === 'quit') {
+      game.audio.ui('select');
+      if (game.saves.current) game.save();
+      this.overlay.close();
+      game.shell.toMenu();
+    }
   }
 }

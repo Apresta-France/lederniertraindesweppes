@@ -31,7 +31,7 @@ $statusLabel = ['done' => 'Terminé', 'now' => 'En cours', 'next' => 'À venir']
   <div class="wrap" style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:28px"><div class="stack-s"><div class="eyebrow">Images du jeu</div><h2 class="h2">La nuit de l'orage</h2></div><div class="small">Touchez une image pour l'agrandir</div></div>
   <div class="wrap gallery">
     <?php foreach ($site['gallery'] as $shot): ?>
-      <button type="button"><img src="<?= e(asset($shot['src'])) ?>" alt="<?= e($shot['alt']) ?>" loading="lazy"><span><?= e($shot['alt']) ?></span></button>
+      <button type="button"<?= !empty($shot['sheet']) ? ' class="sheet"' : '' ?>><img src="<?= e(asset($shot['src'])) ?>" alt="<?= e($shot['alt']) ?>" loading="lazy"><span><?= e($shot['alt']) ?></span></button>
     <?php endforeach; ?>
   </div>
 </section>

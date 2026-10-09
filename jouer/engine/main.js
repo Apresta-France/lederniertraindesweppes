@@ -32,14 +32,23 @@ async function boot() {
   game.data = await loadGameData();
   game.scenes = new SceneManager(game, $('#stage'));
 
+  // Sauvegarde immédiate ; crée un emplacement si la partie n'en a pas encore (lancement direct).
   let saveTimer = 0;
+  game.save = () => {
+    clearTimeout(saveTimer);
+    if (!game.settings.values.consent || embed) return false;
+    const scene = game.scenes.current;
+    const meta = { chapter: scene?.data.meta?.chapter, place: scene?.data.title };
+    if (game.saves.current) game.saves.update(game.state.snapshot(), meta);
+    else {
+      const account = game.shell?.account;
+      game.saves.create({ mode: account ? 'account' : 'local', email: account?.email, ...meta, data: game.state.snapshot() });
+    }
+    return true;
+  };
   game.autosave = () => {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      if (!game.settings.values.consent || !game.saves.current) return;
-      const scene = game.scenes.current;
-      game.saves.update(game.state.snapshot(), { chapter: scene?.data.meta?.chapter, place: scene?.data.title });
-    }, 300);
+    saveTimer = setTimeout(() => { if (game.saves.current) game.save(); }, 300);
   };
   game.state.on('change', () => game.autosave());
 
