@@ -34,8 +34,10 @@
     { "type": "vignette", "background": "radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(10,6,2,.55) 100%)" }
   ],
   "objects": [
-    { "id": "fenetre", "name": "La fenêtre", "rect": [1060, 90, 230, 305], "sprite": "assets/fenetre_fermee.png", "description": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir." },
-    { "id": "lit", "name": "Le lit", "rect": [0, 346, 334, 401], "sprite": "assets/lit_fait.png", "description": "Le lit est fait au carré." },
+    { "id": "fenetre", "name": "La fenêtre", "rect": [1060, 90, 230, 305], "sprite": "assets/fenetre_fermee.png", "description": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir.",
+      "onUse": [{ "do": "voice", "src": "assets/fenetre.mp3" }, { "do": "say", "text": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir." }] },
+    { "id": "lit", "name": "Le lit", "rect": [0, 346, 334, 401], "sprite": "assets/lit_fait.png", "description": "Le lit est fait au carré.",
+      "onUse": [{ "do": "voice", "src": "assets/lit.mp3" }, { "do": "say", "text": "Le lit est fait au carré." }] },
     { "id": "fauteuil", "name": "Le fauteuil de Gisèle", "rect": [1120, 355, 320, 338], "sprite": "assets/fauteuil_vide.png", "description": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre." },
     {
       "id": "gisele", "name": "Gisèle", "rect": [1126, 346, 184, 351], "character": "gisele", "bubble": [1218, 330],
@@ -51,9 +53,12 @@
         }
       ]
     },
-    { "id": "chevet", "name": "La table de chevet", "rect": [320, 416, 113, 186], "sprite": "assets/table_chevet.png", "description": "Une table de chevet en bois, à portée de main du lit." },
-    { "id": "lampe", "name": "La lampe de chevet", "rect": [337, 321, 78, 105], "sprite": "assets/lampe_chevet.png", "description": "La lampe est restée allumée. Elle éclaire doucement la chambre." },
-    { "id": "pilulier", "name": "Le pilulier", "rect": [342, 417, 52, 16], "sprite": "assets/pilulier.png", "description": "Un pilulier, un compartiment par jour de la semaine." },
+    { "id": "chevet", "name": "La table de chevet", "rect": [320, 416, 113, 186], "sprite": "assets/table_chevet.png", "description": "Une table de chevet en bois, à portée de main du lit.",
+      "onUse": [{ "do": "voice", "src": "assets/table_chevet.mp3" }, { "do": "say", "text": "Une table de chevet en bois, à portée de main du lit." }] },
+    { "id": "lampe", "name": "La lampe de chevet", "rect": [337, 321, 78, 105], "sprite": "assets/lampe_chevet.png", "description": "La lampe est restée allumée. Elle éclaire doucement la chambre.",
+      "onUse": [{ "do": "voice", "src": "assets/lampe.mp3" }, { "do": "say", "text": "La lampe est restée allumée. Elle éclaire doucement la chambre." }] },
+    { "id": "pilulier", "name": "Le pilulier", "rect": [342, 417, 52, 16], "sprite": "assets/pilulier.png", "description": "Un pilulier, un compartiment par jour de la semaine.",
+      "onUse": [{ "do": "voice", "src": "assets/pilulier.mp3" }, { "do": "say", "text": "Un pilulier, un compartiment par jour de la semaine." }] },
     {
       "id": "lunettes", "name": "Les lunettes", "rect": [321, 417, 29, 16], "sprite": "@shared/items/lunettes.png",
       "description": "Les lunettes de Gisèle, posées sur la table de chevet.",
@@ -80,31 +85,38 @@
         } }
       ]
     },
-    { "id": "cadre", "name": "La photo", "rect": [454, 351, 64, 63], "sprite": "assets/cadre_photo.png", "description": "Une jeune femme pose devant un moulin. Au dos, une écriture fine : « Rose »." },
+    { "id": "cadre", "name": "La photo", "rect": [454, 351, 64, 63], "sprite": "assets/cadre_photo.png", "description": "Une jeune femme pose devant un moulin. Au dos, une écriture fine : « Rose ».",
+      "onUse": [{ "do": "voice", "src": "assets/photo.mp3" }, { "do": "say", "text": "Une jeune femme pose devant un moulin. Au dos, une écriture fine : « Rose »." }] },
     {
       "id": "boite", "name": "La boîte en fer", "rect": [687, 161, 64, 40], "state": "fermee",
       "states": { "fermee": { "sprite": "assets/boite_fer_fermee.png" }, "ouverte": { "sprite": "assets/boite_fer_fermee.png" } },
       "description": "Une boîte en fer peinte de fleurs. Un petit cadenas la tient fermée.",
-      "onUse": [{ "do": "sfx", "name": "soft" }, { "do": "examine", "panel": "boite" }]
+      "onUse": [{ "do": "voice", "src": "assets/boite.mp3" }, { "do": "examine", "panel": "boite" }]
     },
-    { "id": "horloge", "name": "L'horloge", "rect": [538, 94, 97, 100], "sprite": "assets/horloge_murale.png", "description": "L'horloge s'est arrêtée." },
-    { "id": "calendrier", "name": "Le calendrier", "rect": [831, 198, 112, 161], "sprite": "assets/calendrier.png", "description": "Novembre 2026." },
-    { "id": "tableau", "name": "Le tableau des Charmilles", "rect": [601, 250, 211, 143], "sprite": "assets/tableau_affichage.png", "description": "Les Charmilles. Le menu et les animations de la semaine." },
+    { "id": "horloge", "name": "L'horloge", "rect": [538, 94, 97, 100], "sprite": "assets/horloge_murale.png", "description": "L'horloge s'est arrêtée.",
+      "onUse": [{ "do": "voice", "src": "assets/horloge.mp3" }, { "do": "say", "text": "L'horloge s'est arrêtée." }] },
+    { "id": "calendrier", "name": "Le calendrier", "rect": [831, 198, 112, 161], "sprite": "assets/calendrier.png", "description": "Novembre 2026.",
+      "onUse": [{ "do": "voice", "src": "assets/calendrier.mp3" }, { "do": "say", "text": "Novembre 2026." }] },
+    { "id": "tableau", "name": "Le tableau des Charmilles", "rect": [601, 250, 211, 143], "sprite": "assets/tableau_affichage.png", "description": "Les Charmilles. Le menu et les animations de la semaine.",
+      "onUse": [{ "do": "voice", "src": "assets/tableau.mp3" }, { "do": "say", "text": "Les Charmilles. Le menu et les animations de la semaine." }] },
     {
       "id": "bouton", "name": "Le bouton d'appel", "rect": [72, 298, 35, 103], "state": "eteint",
       "states": { "eteint": { "sprite": "assets/bouton_appel.png" }, "allume": { "sprite": "assets/bouton_appel.png" } },
       "onUse": [
         { "do": "cycleState", "object": "bouton", "states": ["eteint", "allume"] },
-        { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [{ "do": "sfx", "name": "ding" }], "else": [{ "do": "sfx", "name": "click" }] },
+        { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [{ "do": "sfx", "src": "assets/sonette.wav" }], "else": [{ "do": "sfx", "name": "click" }] },
         { "do": "say", "byState": "bouton", "texts": {
           "eteint": "Le bouton d'appel. Le voyant est éteint.",
           "allume": "Le voyant rouge s'allume. Quelqu'un devrait venir."
         } }
       ]
     },
-    { "id": "deambulateur", "name": "Le déambulateur", "rect": [1393, 429, 114, 308], "sprite": "assets/deambulateur.png", "description": "Le déambulateur de Gisèle, rangé près du fauteuil." },
-    { "id": "plante", "name": "La plante", "rect": [1486, 562, 100, 214], "sprite": "assets/plante_sol.png", "description": "Quelqu'un l'arrose régulièrement." },
-    { "id": "porte", "name": "La porte du couloir", "rect": [1538, 0, 134, 941], "sprite": "assets/porte_ouverte.png", "description": "La porte est ouverte sur le couloir de la résidence." },
+    { "id": "deambulateur", "name": "Le déambulateur", "rect": [1393, 429, 114, 308], "sprite": "assets/deambulateur.png", "description": "Le déambulateur de Gisèle, rangé près du fauteuil.",
+      "onUse": [{ "do": "voice", "src": "assets/deambulateur.mp3" }, { "do": "say", "text": "Le déambulateur de Gisèle, rangé près du fauteuil." }] },
+    { "id": "plante", "name": "La plante", "rect": [1486, 562, 100, 214], "sprite": "assets/plante_sol.png", "description": "Quelqu'un l'arrose régulièrement.",
+      "onUse": [{ "do": "voice", "src": "assets/plante.mp3" }, { "do": "say", "text": "Quelqu'un l'arrose régulièrement." }] },
+    { "id": "porte", "name": "La porte du couloir", "rect": [1538, 0, 134, 941], "sprite": "assets/porte_ouverte.png", "description": "La porte est ouverte sur le couloir de la résidence.",
+      "onUse": [{ "do": "voice", "src": "assets/porte.mp3" }, { "do": "say", "text": "La porte est ouverte sur le couloir de la résidence." }] },
     { "id": "commode", "name": "La commode", "rect": [440, 408, 252, 190], "description": "Une commode en bois ciré, un napperon de dentelle." }
   ],
   "panels": {

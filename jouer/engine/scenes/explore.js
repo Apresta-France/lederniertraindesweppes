@@ -458,7 +458,7 @@ export class ExploreScene extends Scene {
     this.speaking?.handle.stop();
     if (!audio.volume('voice')) return;
     const handle = audio.voice.play(src);
-    const obj = this.objects.find(o => o.character === a.character);
+    const obj = a.character ? this.objects.find(o => o.character === a.character) : null;
     const talk = this.el.querySelector('.room-talk');
     this.speaking = { handle, objectId: obj?.id };
     if (obj?.bubble) {
