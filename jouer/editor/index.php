@@ -76,6 +76,7 @@ header('Cache-Control: no-store');
 
         <aside class="inspector" aria-labelledby="inspector-heading">
             <h2 id="inspector-heading" class="visually-hidden">Inspecteur</h2>
+            <div id="preview-dock" class="preview-dock" hidden></div>
             <div id="inspector" class="inspector-body"></div>
         </aside>
     </div>

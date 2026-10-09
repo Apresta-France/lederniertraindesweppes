@@ -5,8 +5,9 @@ const PERSISTED = ['sound', 'consent', 'music', 'voice', 'sfx', 'reduceMotion', 
 
 // Réglages du joueur, partagés par la coquille et toutes les scènes.
 export class Settings extends Emitter {
-  constructor() {
+  constructor({ persist = true } = {}) {
     super();
+    this.persistent = persist;
     this.values = {
       sound: true,
       consent: true,
@@ -33,7 +34,7 @@ export class Settings extends Emitter {
   }
 
   persist() {
-    if (!this.values.consent) return;
+    if (!this.values.consent || !this.persistent) return;
     try {
       localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(PERSISTED.map(k => [k, this.values[k]]))));
     } catch (e) { /* stockage indisponible */ }

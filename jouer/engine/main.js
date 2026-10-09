@@ -8,19 +8,23 @@ import { Announcer } from './ui/announcer.js';
 import { Settings } from './shell/settings.js';
 import { Shell } from './shell/shell.js';
 import { installDebug } from './shell/debug.js';
+import { installEmbed } from './shell/embed.js';
 
 const $ = s => document.querySelector(s);
 
 async function boot() {
   const body = document.body;
   const params = new URLSearchParams(location.search);
+  const embed = params.get('embed') === '1' && window.parent !== window;
   const game = Object.assign(new Emitter(), {
-    config: { debug: body.dataset.debug === 'on' && !params.has('nodebug'), shell: {} },
+    config: { debug: body.dataset.debug === 'on' && !params.has('nodebug') && !embed, shell: {} },
     debug: {},
+    embed,
     previewId: params.get('preview') === '1' ? params.get('scene') : null,
   });
 
-  game.settings = new Settings();
+  game.settings = new Settings({ persist: !embed });
+  if (embed) game.settings.values.sound = false;
   game.audio = new AudioManager(game.settings);
   game.state = new GameState();
   game.saves = new Saves();
@@ -48,9 +52,13 @@ async function boot() {
   game.settings.on('change', applySettings);
   applySettings();
 
+  window.ldtw = game;
+  if (embed) {
+    installEmbed(game);
+    return;
+  }
   game.shell = new Shell(game);
   if (game.config.debug) installDebug(game);
-  window.ldtw = game;
 
   const direct = params.get('scene');
   if (direct) startDirect(game, direct);

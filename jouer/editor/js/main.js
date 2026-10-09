@@ -55,6 +55,7 @@ const state = {
 
 const ctx = {
   library,
+  previewDock: $('preview-dock'),
   characters: () => (state.list?.game?.characters || []).map((id) => [id, id]),
   sceneOptions: () => (state.list?.scenes || [])
     .filter((s) => !s.missing && s.id !== store.id)

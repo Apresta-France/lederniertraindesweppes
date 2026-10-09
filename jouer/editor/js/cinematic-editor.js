@@ -2,6 +2,7 @@ import { h, uid, listen, clamp } from './dom.js';
 import { assetUrl, fileName, formatClock, formatSeconds } from './paths.js';
 import { LANES, OPS, OP_NAMES, itemEnd, laneOf, sortTimeline, totalDuration } from './timeline-ops.js';
 import { confirmDialog } from './ui.js';
+import { CinePreview } from './cine-preview.js';
 
 const PPS_PREF = 'ldtw_editor_pps';
 const RULER_H = 24;
@@ -41,12 +42,18 @@ export class CinematicEditor {
     this.drag = null;
     this.rulerSignature = '';
     this.listSignature = '';
+    this.playhead = 0;
+    this.scrub = false;
     this.build();
+    this.preview = ctx.previewDock ? new CinePreview({ store, dock: ctx.previewDock }) : null;
     this.disposers = [
       listen(store, 'change', () => this.render()),
       listen(store, 'select', () => this.onSelect()),
       listen(store, 'readonly', () => this.render()),
     ];
+    if (this.preview) {
+      this.disposers.push(listen(this.preview, 'time', (e) => this.showPlayhead(e.detail.t, e.detail.playing && !e.detail.local)));
+    }
     this.resizeObserver = new ResizeObserver(() => this.render());
     this.resizeObserver.observe(this.scroller);
     this.render();
@@ -84,7 +91,7 @@ export class CinematicEditor {
         button('+', () => this.setPps(this.pps * 1.5), 'Zoomer', false)),
       h('span', null, 'Durée totale : ', this.totalLabel),
       this.hoverLabel,
-      h('span', { class: 'toolbar-hint' }, 'Glisser : pas de 100 ms (Alt : libre) · Flèches : ±100 ms (Maj : ±1 s) · Ctrl + molette : zoom'));
+      h('span', { class: 'toolbar-hint' }, 'Règle : placer la tête de lecture · Double-clic : aller à l’élément · Espace : lecture · Glisser : pas de 100 ms (Alt : libre) · Flèches : ±100 ms (Maj : ±1 s) · Ctrl + molette : zoom'));
 
     this.laneLabels = Object.fromEntries(LANES.map((lane) => [lane.id, h('div', { class: 'tl-lane-label' }, lane.label)]));
     this.laneEls = Object.fromEntries(LANES.map((lane) => [lane.id, h('div', { class: `tl-lane tl-lane-${lane.id}` })]));
@@ -92,7 +99,8 @@ export class CinematicEditor {
     this.endLine = h('div', { class: 'tl-endline', hidden: true });
     this.hoverLine = h('div', { class: 'tl-hoverline', hidden: true });
     this.itemsLayer = h('div', { class: 'tl-items' });
-    this.content = h('div', { class: 'tl-content' }, this.ruler, LANES.map((l) => this.laneEls[l.id]), this.endLine, this.itemsLayer, this.hoverLine);
+    this.playheadEl = h('div', { class: 'tl-playhead', 'aria-hidden': 'true' }, h('span', { class: 'tl-playhead-handle' }));
+    this.content = h('div', { class: 'tl-content' }, this.ruler, LANES.map((l) => this.laneEls[l.id]), this.endLine, this.itemsLayer, this.hoverLine, this.playheadEl);
     this.scroller = h('div', { class: 'tl-scroll' }, this.content);
     const labels = h('div', { class: 'tl-labels' }, h('div', { class: 'tl-ruler-spacer', style: { height: `${RULER_H}px` } }), LANES.map((l) => this.laneLabels[l.id]));
     this.timelineEl = h('div', { class: 'timeline', role: 'group', 'aria-label': 'Frise chronologique (au clavier, utilisez la liste ci-dessous)' }, labels, this.scroller);
@@ -101,6 +109,10 @@ export class CinematicEditor {
     this.content.addEventListener('pointermove', (e) => this.onPointerMove(e));
     this.content.addEventListener('pointerup', (e) => this.onPointerUp(e));
     this.content.addEventListener('pointercancel', (e) => this.onPointerUp(e));
+    this.content.addEventListener('dblclick', (e) => {
+      const el = e.target.closest('.tl-item');
+      if (el) this.seek(num(this.timeline[Number(el.dataset.index)]?.at));
+    });
     this.content.addEventListener('pointerleave', () => {
       this.hoverLine.hidden = true;
       this.hoverLabel.textContent = 't —';
@@ -127,7 +139,24 @@ export class CinematicEditor {
   destroy() {
     this.disposers.forEach((dispose) => dispose());
     this.resizeObserver.disconnect();
+    this.preview?.destroy();
     this.root.remove();
+  }
+
+  /** Moves the playhead and the preview to `ms`; scrubbing always pauses playback. */
+  seek(ms, { play = false } = {}) {
+    this.showPlayhead(ms);
+    this.preview?.seek(this.playhead, { play });
+  }
+
+  showPlayhead(ms, follow = false) {
+    this.playhead = Math.max(0, num(ms));
+    const x = this.xOf(this.playhead);
+    this.playheadEl.style.left = `${x}px`;
+    if (follow) {
+      const { scrollLeft, clientWidth } = this.scroller;
+      if (x < scrollLeft || x > scrollLeft + clientWidth - 40) this.scroller.scrollLeft = Math.max(0, x - 80);
+    }
   }
 
   setPps(value, anchorX = null) {
@@ -223,6 +252,7 @@ export class CinematicEditor {
     const endItem = timeline.find((item) => item?.do === 'end');
     this.endLine.hidden = !endItem;
     if (endItem) this.endLine.style.left = `${this.xOf(endItem.at)}px`;
+    this.playheadEl.style.left = `${this.xOf(this.playhead)}px`;
 
     const hasSel = selection?.kind === 'item' && timeline[selection.index];
     this.btnDup.disabled = this.store.readOnly || !hasSel;
@@ -314,6 +344,10 @@ export class CinematicEditor {
     const el = event.target.closest('.tl-item');
     if (!el) {
       if (!event.target.closest('.tl-ruler')) this.store.setSelection(null);
+      this.scrub = true;
+      this.content.setPointerCapture(event.pointerId);
+      this.seek(this.timeAt(event));
+      event.preventDefault();
       return;
     }
     const index = Number(el.dataset.index);
@@ -330,6 +364,10 @@ export class CinematicEditor {
     this.hoverLine.style.left = `${event.clientX - rect.left}px`;
     this.hoverLabel.textContent = `t ${formatClock(time)}`;
 
+    if (this.scrub) {
+      this.seek(event.altKey ? time : Math.round(time / SNAP_MS) * SNAP_MS);
+      return;
+    }
     const drag = this.drag;
     if (!drag || this.store.readOnly) return;
     const dx = event.clientX - drag.startX;
@@ -345,6 +383,11 @@ export class CinematicEditor {
   }
 
   onPointerUp(event) {
+    if (this.scrub) {
+      this.scrub = false;
+      if (this.content.hasPointerCapture(event.pointerId)) this.content.releasePointerCapture(event.pointerId);
+      return;
+    }
     const drag = this.drag;
     if (!drag) return;
     this.drag = null;
@@ -410,6 +453,14 @@ export class CinematicEditor {
 
   handleKey(event) {
     const selection = this.store.selection;
+    if (event.key === ' ' && this.preview) {
+      this.preview.toggle();
+      return true;
+    }
+    if (event.key === 'Home') {
+      this.seek(0);
+      return true;
+    }
     if (event.key === 'Escape') {
       this.store.setSelection(null);
       return true;

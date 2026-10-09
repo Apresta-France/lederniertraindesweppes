@@ -34,7 +34,16 @@ const CARD_STYLES = {
 };
 
 // Séquence minutée : plans Ken Burns, cartons, pluie, éclairs, musique. Tout vient de data.timeline.
+// Tout passe par une horloge propre à la scène (this.queue) : on peut la mettre en pause, et seek()
+// reconstitue instantanément l'état à n'importe quel instant (aperçu de l'éditeur).
 export class CinematicScene extends Scene {
+  queue = [];
+  paused = false;
+  pausedAt = 0;
+  cursor = null;
+  silent = false;
+  loopLevels = {};
+
   imagesToPreload() {
     return (this.data.timeline || []).flatMap(it => [it.src, ...(it.frames || [])]).filter(Boolean).map(p => this.url(p));
   }
@@ -72,7 +81,7 @@ export class CinematicScene extends Scene {
 
   start() {
     const skipMode = this.data.skip?.mode ?? 'end';
-    if (skipMode !== 'none') {
+    if (skipMode !== 'none' && !this.game.embed) {
       this.listen(this.el, 'click', () => this.skip());
       this.listen(window, 'keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.skip(); }
@@ -80,20 +89,127 @@ export class CinematicScene extends Scene {
     }
     this.onDispose(() => {
       cancelAnimationFrame(this.raf);
-      Object.values(this.loops).forEach(l => l.stop());
+      cancelAnimationFrame(this.tickRaf);
+      clearInterval(this.tickTimer);
+      this.stopLoops();
     });
     if (this.canvas) this.startRain();
     this.t0 = performance.now();
+    const tick = () => { this.step(); this.tickRaf = requestAnimationFrame(tick); };
+    this.tickRaf = requestAnimationFrame(tick);
+    // rAF s'arrête quand l'onglet est masqué : l'intervalle garde l'horloge en marche.
+    this.tickTimer = setInterval(() => this.step(), 250);
     this.schedule(0);
   }
 
   get time() {
-    return performance.now() - this.t0;
+    return this.paused ? this.pausedAt : performance.now() - this.t0;
+  }
+
+  get duration() {
+    const end = (this.data.timeline || []).find(it => it.do === 'end');
+    return end ? end.at : Math.max(0, ...(this.data.timeline || []).map(it => (it.at || 0) + (it.duration || 0)));
+  }
+
+  // ---- Horloge ----
+
+  at(time, fn) {
+    const ev = { time, fn };
+    let i = this.queue.length;
+    while (i > 0 && this.queue[i - 1].time > time) i--;
+    this.queue.splice(i, 0, ev);
+    return ev;
+  }
+
+  later(fn, ms) {
+    return this.at((this.cursor ?? this.time) + ms, fn);
+  }
+
+  clearTimers() {
+    super.clearTimers();
+    this.queue = [];
+  }
+
+  step() {
+    if (this.disposed || this.paused) return;
+    const now = this.time;
+    while (this.queue.length && this.queue[0].time <= now && !this.disposed && !this.paused) {
+      const ev = this.queue.shift();
+      this.cursor = ev.time;
+      try { ev.fn(); } finally { this.cursor = null; }
+    }
   }
 
   schedule(from) {
-    const items = (this.data.timeline || []).filter(it => it.at >= from).sort((a, b) => a.at - b.at);
-    items.forEach(it => this.later(() => this.exec(it), it.at - from));
+    (this.data.timeline || []).filter(it => it.at >= from).forEach(it => this.at(it.at, () => this.exec(it)));
+  }
+
+  pause() {
+    if (this.paused) return;
+    this.pausedAt = this.time;
+    this.paused = true;
+    this.el.getAnimations({ subtree: true }).forEach(a => { if (a.playState === 'running') a.pause(); });
+    this.game.audio.music.el?.pause();
+    this.applyLoops(0);
+  }
+
+  resume() {
+    if (!this.paused) return;
+    this.t0 = performance.now() - this.pausedAt;
+    this.paused = false;
+    this.finishing = false;
+    this.el.getAnimations({ subtree: true }).forEach(a => { if (a.playState === 'paused') a.play(); });
+    const music = this.game.audio.music;
+    if (music.el && music.src) music.el.play().catch(() => {});
+    this.applyLoops();
+  }
+
+  // Reconstitue l'état à l'instant `t` : la frise est rejouée en silence et chaque animation créée
+  // en route est avancée du temps écoulé depuis sa création.
+  seek(t, { play = !this.paused } = {}) {
+    const end = (this.data.timeline || []).find(it => it.do === 'end');
+    t = Math.max(0, end ? Math.min(t, end.at - 1) : t);
+    this.clearTimers();
+    this.el.getAnimations({ subtree: true }).forEach(a => a.cancel());
+    this.stopLoops();
+    this.game.audio.music.stop(0);
+    cancelAnimationFrame(this.raf);
+    this.render();
+    if (this.canvas) this.startRain();
+    this.finishing = false;
+    this.music = null;
+    this.loopLevels = {};
+
+    const created = [];
+    this.silent = true;
+    this.schedule(0);
+    while (this.queue.length && this.queue[0].time <= t) {
+      const ev = this.queue.shift();
+      const before = new Set(this.el.getAnimations({ subtree: true }));
+      this.cursor = ev.time;
+      try { ev.fn(); } finally { this.cursor = null; }
+      this.el.getAnimations({ subtree: true }).forEach(a => { if (!before.has(a)) created.push([a, ev.time]); });
+    }
+    this.silent = false;
+    created.forEach(([a, from]) => {
+      if (a.playState !== 'idle') a.currentTime = (a.currentTime || 0) + (t - from);
+    });
+    this.rain = this.rainTarget;
+
+    this.paused = true;
+    this.pausedAt = t;
+    this.el.getAnimations({ subtree: true }).forEach(a => { if (a.playState === 'running') a.pause(); });
+    if (this.music) {
+      const { it, from } = this.music;
+      const music = this.game.audio.music;
+      music.play(this.url(it.src), { fade: 0, loop: it.loop ?? true, volume: this.music.volume });
+      const el = music.el;
+      const offset = (t - from) / 1000;
+      const seekTo = () => { el.currentTime = el.loop && el.duration ? offset % el.duration : offset; };
+      if (el.readyState >= 1) seekTo(); else el.addEventListener('loadedmetadata', seekTo, { once: true });
+      el.pause();
+    }
+    if (play) this.resume();
   }
 
   skip() {
@@ -111,9 +227,13 @@ export class CinematicScene extends Scene {
 
   jumpTo(at) {
     this.clearTimers();
-    this.cardsEl.querySelectorAll('.cine-card').forEach(c => this.removeCard(c, 1200));
     this.t0 = performance.now() - at;
+    this.cardsEl.querySelectorAll('.cine-card').forEach(c => this.removeCard(c, 1200));
     this.schedule(at);
+  }
+
+  announce(text) {
+    if (!this.silent && !this.game.embed) super.announce(text);
   }
 
   exec(it) {
@@ -176,6 +296,11 @@ export class CinematicScene extends Scene {
     },
 
     music(it) {
+      if (this.silent) {
+        if (it.src) this.music = { it, from: this.cursor, volume: it.volume ?? 1 };
+        else if (this.music) this.music.volume = it.volume ?? 1;
+        return;
+      }
       const { music } = this.game.audio;
       if (it.src) music.play(this.url(it.src), { fade: it.fade ?? 2500, loop: it.loop ?? true, volume: it.volume ?? 1 });
       else music.fadeTo(it.volume ?? 1, it.fade ?? 1000);
@@ -194,6 +319,7 @@ export class CinematicScene extends Scene {
       this.stage.innerHTML = '';
       this.rainTarget = 0;
       this.rain = 0;
+      this.loopLevels.rain = 0;
       const rain = this.loops.rain;
       if (rain) rain.gain.gain.setValueAtTime(0, this.game.audio.ctx.currentTime);
     },
@@ -215,7 +341,7 @@ export class CinematicScene extends Scene {
     },
 
     clockTicks(it) {
-      const ctx = this.game.audio.context();
+      const ctx = this.silent || this.paused ? null : this.game.audio.context();
       const { tickAt, clunk } = ctx ? synth.clockTicks(ctx, this.game.audio.sfxBus) : { tickAt: [], clunk: 4 };
       const steps = it.advanceAt || [];
       steps.forEach((k, n) => this.later(() => this.clockFrame(n + 1), (tickAt.length > k ? tickAt[k] : 1.2 + n) * 1000));
@@ -232,7 +358,7 @@ export class CinematicScene extends Scene {
   removeCard(card, ms) {
     card.style.transition = `opacity ${ms}ms ease, filter ${ms}ms ease`;
     card.classList.add('out');
-    setTimeout(() => card.remove(), ms + 50);
+    this.later(() => card.remove(), ms + 50);
   }
 
   flash(p, darkImg) {
@@ -269,6 +395,7 @@ export class CinematicScene extends Scene {
   }
 
   sound(name, power = 1) {
+    if (this.silent) return;
     const audio = this.game.audio, ctx = audio.context();
     if (!ctx) return;
     if (name === 'thunder') synth.thunder(ctx, audio.sfxBus, power, power >= 1 ? 0.08 : 0.35 + Math.random() * 0.4);
@@ -276,6 +403,8 @@ export class CinematicScene extends Scene {
   }
 
   loopTo(kind, level, timeConstant) {
+    this.loopLevels[kind] = level;
+    if (this.silent || this.paused) return;
     const audio = this.game.audio, ctx = audio.context();
     if (!ctx) return;
     if (!this.loops[kind]) {
@@ -284,6 +413,21 @@ export class CinematicScene extends Scene {
       this.loops[kind] = make(ctx, audio.sfxBus);
     }
     this.loops[kind].gain.gain.setTargetAtTime(level, ctx.currentTime, timeConstant);
+  }
+
+  // Remet les boucles (pluie, vent) à leur niveau courant, ou à `level` (0 pour la pause).
+  applyLoops(level) {
+    for (const [kind, target] of Object.entries(this.loopLevels)) {
+      if (level === 0) {
+        const ctx = this.game.audio.ctx;
+        if (ctx && this.loops[kind]) this.loops[kind].gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+      } else this.loopTo(kind, target, 0.3);
+    }
+  }
+
+  stopLoops() {
+    Object.values(this.loops || {}).forEach(l => l.stop());
+    this.loops = {};
   }
 
   startRain() {
@@ -320,6 +464,11 @@ export class CinematicScene extends Scene {
   finish(skipped, endItem) {
     if (this.finishing) return;
     this.finishing = true;
+    if (this.game.embed) {
+      this.pause();
+      this.game.emit('ended', this);
+      return;
+    }
     this.clearTimers();
     const natural = endItem?.fadeOut ?? 1400;
     const fade = skipped ? Math.min(700, natural || 0) : natural;

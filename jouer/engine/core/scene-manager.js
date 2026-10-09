@@ -21,6 +21,11 @@ export class SceneManager {
       this.game.announcer.alert(`La scène « ${id} » est introuvable.`);
       return;
     }
+    return this.show(id, data, seq);
+  }
+
+  // Monte une scène à partir de données déjà chargées (aperçu intégré de l'éditeur).
+  async show(id, data, seq = ++this.seq) {
     const Type = sceneTypes.get(data.type);
     if (!Type) {
       console.error(`[scènes] type inconnu « ${data.type} » pour « ${id} »`);
@@ -38,6 +43,7 @@ export class SceneManager {
     scene.start();
     this.game.emit('scene', scene);
     this.game.autosave();
+    return scene;
   }
 
   // Appelé par une scène quand elle se termine d'elle-même.

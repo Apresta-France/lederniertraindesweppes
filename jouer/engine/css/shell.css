@@ -242,3 +242,4 @@ button.link{border:0;padding:0;color:#a99d84;font-size:max(12px,.95cqw);letter-s
 #dbg .dbg-row button:hover{background:rgba(217,120,90,.12)}
 #dbg hr{border:0;border-top:1px solid rgba(217,183,122,.18);margin:10px 0}
 #dbg .dbg-hint{opacity:.55;font-size:11px;margin-top:8px}h2.panel-title{margin:0}
+body.embed .cine-skip,body.embed .preview-gate{display:none}
