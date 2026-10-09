@@ -1,0 +1,17 @@
+{
+  "id": "il-etait-une-fois",
+  "type": "cinematic",
+  "title": "« Il était une fois »",
+  "meta": { "chapter": "Prologue", "notes": "Carton d'ouverture d'une nouvelle partie." },
+  "next": "intro-cinematique",
+  "chrome": { "background": "radial-gradient(ellipse 55% 45% at 50% 50%,#132033 0%,#0b111c 60%,#070b12 100%)" },
+  "skip": { "mode": "end", "label": "" },
+  "timeline": [
+    {
+      "at": 0, "do": "card", "style": "once",
+      "title": "Il était une fois", "titleEffect": "words", "dots": 3,
+      "ornament": "both", "until": 5200, "out": 1200
+    },
+    { "at": 6400, "do": "end", "fadeOut": 0 }
+  ]
+}

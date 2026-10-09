@@ -1,6 +1,8 @@
 .env
 .env.bak
 jouer/.env
+jouer/scenes/*/.history/
+jouer/scenes/*/.lock
 storage/*.sqlite
 storage/*.sqlite-journal
 storage/*.sqlite-wal

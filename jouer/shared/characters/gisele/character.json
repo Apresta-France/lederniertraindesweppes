@@ -1,0 +1,23 @@
+{
+  "id": "gisele",
+  "name": "Gisèle",
+  "sprites": {
+    "idle": "sprites/g2_f0.png",
+    "talk": ["sprites/g2_f1.png", "sprites/g2_f2.png"],
+    "blink": "sprites/g2_blink.png"
+  },
+  "voice": {
+    "touch": [
+      { "src": "voice/gisele_touch_01.mp3", "subtitle": "" },
+      { "src": "voice/gisele_touch_02.mp3", "subtitle": "" },
+      { "src": "voice/gisele_touch_03.mp3", "subtitle": "" }
+    ],
+    "calibration": [
+      { "src": "voice/gisele_reglage_son01.mp3", "subtitle": "" },
+      { "src": "voice/gisele_reglage_son02.mp3", "subtitle": "" },
+      { "src": "voice/gisele_reglage_son03.mp3", "subtitle": "" },
+      { "src": "voice/gisele_reglage_son04.mp3", "subtitle": "" },
+      { "src": "voice/gisele_reglage_son05.mp3", "subtitle": "" }
+    ]
+  }
+}

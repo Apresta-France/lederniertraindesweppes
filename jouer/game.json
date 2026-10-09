@@ -1,0 +1,18 @@
+{
+  "title": "Le Dernier Train des Weppes",
+  "version": "0.2.0",
+  "start": "il-etait-une-fois",
+  "continue": "chambre-gisele",
+  "scenes": [
+    { "id": "il-etait-une-fois", "label": "« Il était une fois »" },
+    { "id": "intro-cinematique", "label": "Cinématique d'ouverture" },
+    { "id": "acte1-arrivee", "label": "Acte 1 — titre et arrivée" },
+    { "id": "chambre-gisele", "label": "Chambre de Gisèle" }
+  ],
+  "characters": ["gisele"],
+  "items": "shared/items/items.json",
+  "shell": {
+    "menuMusic": "@shared/audio/music/silent_menu.mp3",
+    "voicePreview": { "character": "gisele", "pool": "calibration" }
+  }
+}

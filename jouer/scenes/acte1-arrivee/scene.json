@@ -1,0 +1,31 @@
+{
+  "id": "acte1-arrivee",
+  "type": "cinematic",
+  "title": "Acte 1 — titre et arrivée",
+  "meta": { "act": "Acte 1", "chapter": "Chapitre 1 · La panne", "notes": "Carton de titre puis arrivée à l'EHPAD, jusqu'au couloir de Gisèle." },
+  "next": "chambre-gisele",
+  "chrome": { "vignette": 0.6, "background": "#05070c" },
+  "skip": { "mode": "marker", "label": "Cliquer pour continuer" },
+  "timeline": [
+    { "at": 0, "do": "music", "src": "@shared/audio/music/chambre_gisele.mp3", "volume": 1, "fade": 4000, "loop": true },
+    {
+      "at": 0, "do": "card", "style": "act",
+      "eyebrow": "Acte 1", "title": "L'aller", "subtitle": "Chapitre 1 <span>·</span> La panne", "ornament": "middle",
+      "lines": [
+        { "at": 2800, "text": "Dans les Weppes, les anciens disaient <em>« au weppe »</em> pour dire <em>« au soir »</em>." },
+        { "at": 5600, "text": "C'est l'heure où l'on rentre les bêtes et où l'on ferme les volets." },
+        { "at": 8600, "text": "L'heure où, parfois, ce qui est parti revient.", "emphasis": true }
+      ],
+      "until": 14200, "out": 1200
+    },
+    { "at": 14200, "do": "marker" },
+    { "at": 15200, "do": "shot", "src": "assets/01_portail.png", "duration": 6200, "fade": 1800, "from": [1, 0, 0], "to": [1.13, 0, 1], "description": "" },
+    { "at": 15600, "do": "fx", "name": "leak", "on": true },
+    { "at": 16800, "do": "caption", "kicker": "Fournes-en-Weppes", "title": "EHPAD Résidence des Weppes", "text": "Au weppe — l'heure où l'on ferme les volets", "duration": 6200 },
+    { "at": 21400, "do": "shot", "src": "assets/02_facade.png", "duration": 5200, "fade": 1500, "from": [1.04, 0, 0], "to": [1.16, 0, -1], "description": "" },
+    { "at": 26600, "do": "shot", "src": "assets/03_jardin.png", "duration": 5200, "fade": 1500, "from": [1.12, 2.5, 0], "to": [1.12, -2.5, 0], "description": "" },
+    { "at": 31800, "do": "shot", "src": "assets/04_hall.png", "duration": 5600, "fade": 1500, "from": [1.14, 5, 0], "to": [1.14, -5, 0], "ease": "cubic-bezier(.45,.05,.55,.95)", "description": "" },
+    { "at": 37400, "do": "shot", "src": "assets/05_couloir.png", "duration": 4600, "fade": 1300, "from": [1.16, 6, 0], "to": [1.16, -6, 0], "ease": "cubic-bezier(.45,.05,.4,1)", "description": "" },
+    { "at": 40100, "do": "end", "fadeOut": 600, "keepMusic": true }
+  ]
+}

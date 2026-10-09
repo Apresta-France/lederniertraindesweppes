@@ -1,0 +1,12 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<FilesMatch "^\.|\.(json|md|txt|bak|log|ini|sh)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|css)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>

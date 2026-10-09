@@ -1,0 +1,69 @@
+/* Scènes de type « cinematic » */
+.scene--cinematic{position:absolute;inset:0;z-index:50;background:#000;overflow:hidden;font-family:'Marcellus',Georgia,serif;color:#efe0bf}
+.scene--cinematic.is-skippable{cursor:pointer}
+.cine-stage{position:absolute;inset:0;will-change:transform}
+.cine-layer{position:absolute;inset:0;opacity:0;overflow:hidden}
+.cine-layer img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;will-change:transform}
+.cine-vignette{position:absolute;inset:0;pointer-events:none}
+.cine-bars:before,.cine-bars:after{content:'';position:absolute;left:0;right:0;height:6vh;background:#000;z-index:2}
+.cine-bars:before{top:0}.cine-bars:after{bottom:0}
+.cine-rain{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.cine-flash{position:absolute;inset:0;background:#dfe8ff;opacity:0;pointer-events:none;mix-blend-mode:screen}
+.cine-leak{position:absolute;inset:-20%;pointer-events:none;mix-blend-mode:screen;opacity:0;background:radial-gradient(ellipse 35% 45% at 30% 40%,rgba(255,190,120,.35),transparent 70%),radial-gradient(ellipse 30% 40% at 75% 60%,rgba(255,150,90,.2),transparent 70%);transition:opacity 2s}
+.cine-leak.on{opacity:1;animation:cine-leak 18s ease-in-out infinite alternate}
+.cine-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none}
+.cine-logo img{width:min(80vw,140vh);-webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 62%,transparent 100%);mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 62%,transparent 100%)}
+.cine-skip{position:absolute;right:28px;bottom:22px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#cdbf9f;opacity:.45;z-index:3}
+
+.cine-caption{position:absolute;left:5vw;bottom:8vh;display:flex;flex-direction:column;gap:6px;opacity:0;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.cine-caption .k{font-size:clamp(11px,.95vw,14px);letter-spacing:.3em;text-transform:uppercase;color:#d9b77a}
+.cine-caption .n{font-family:'Cinzel',serif;font-weight:600;font-size:clamp(20px,2.2vw,34px)}
+.cine-caption .s{font-size:clamp(13px,1.1vw,17px);color:#cdbf9f}
+
+/* Cartons */
+.cine-cards{position:absolute;inset:0;pointer-events:none}
+.cine-card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6vh 8vw}
+.cine-card.out{opacity:0;filter:blur(6px)}
+.cine-orn{display:flex;align-items:center;gap:12px;width:min(40vw,440px)}
+.cine-orn b{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(217,183,122,.75));transform-origin:right;animation:cine-line 1.3s 2s ease both}
+.cine-orn b:last-child{background:linear-gradient(90deg,rgba(217,183,122,.75),transparent);transform-origin:left}
+.cine-orn i{width:8px;height:8px;transform:rotate(45deg);border:1px solid #d9b77a;animation:cine-fade 1s 2.5s ease both}
+
+.cine-card--date{gap:clamp(14px,2.4vh,26px)}
+.cine-place{font-family:'Cinzel',serif;font-weight:600;font-size:clamp(28px,4.4vw,64px);color:#efe0bf;text-shadow:0 0 30px rgba(217,183,122,.3);display:flex;flex-wrap:wrap;justify-content:center}
+.cine-place span{display:inline-block;white-space:pre;animation:cine-letter 1.1s cubic-bezier(.2,.7,.2,1) both}
+.cine-when{font-size:clamp(16px,1.9vw,28px);letter-spacing:.14em;color:#cdbf9f;animation:cine-when 1.6s 2.7s ease both}
+.cine-when sup{font-size:.6em}
+
+.cine-card--act{gap:clamp(14px,2.6vh,28px);background:radial-gradient(ellipse 60% 50% at 50% 45%,#141f31 0%,#0a0f19 60%,#05070c 100%)}
+.cine-card--act .cine-orn{width:min(42vw,460px);margin:.4vh 0 1.4vh}
+.cine-card--act .cine-orn b{animation-delay:1.8s}.cine-card--act .cine-orn i{animation-delay:2.3s}
+.cine-eyebrow{font-family:'Cinzel',serif;font-size:clamp(13px,1.3vw,18px);letter-spacing:.55em;padding-left:.55em;text-transform:uppercase;color:#d9b77a;animation:cine-rise 1.4s .3s ease both}
+.cine-act{font-family:'Cinzel',serif;font-weight:600;font-size:clamp(40px,7vw,104px);line-height:1;letter-spacing:.06em;text-shadow:0 0 34px rgba(217,183,122,.35);animation:cine-title 2s .9s cubic-bezier(.2,.7,.2,1) both}
+.cine-chap{font-family:'Cinzel',serif;font-size:clamp(16px,1.8vw,26px);letter-spacing:.22em;color:#e6d6b2;animation:cine-rise 1.4s 1.7s ease both}
+.cine-chap span{color:#d9b77a;margin:0 .3em}
+.cine-epi{max-width:760px;display:flex;flex-direction:column;gap:1.2vh;font-size:clamp(16px,1.55vw,24px);line-height:1.6;color:#d8cbb0;text-wrap:pretty}
+.cine-epi p{margin:0;opacity:0}
+.cine-epi p.on{animation:cine-sentence 1.8s ease both}
+.cine-epi em{font-style:normal;color:#efe0bf}
+.cine-epi .last{font-family:'Cinzel',serif;color:#efe0bf;font-size:1.08em;letter-spacing:.02em}
+
+.cine-card--once{gap:clamp(18px,3vh,32px)}
+.cine-card--once .cine-orn{width:min(46vw,520px)}
+.cine-card--once .cine-orn b{animation-delay:.2s}.cine-card--once .cine-orn i{animation-delay:.9s}
+.cine-card--once .cine-orn.bottom b{animation-delay:2s}.cine-card--once .cine-orn.bottom i{animation-delay:2.6s}
+.cine-once-line{display:flex;align-items:baseline;gap:.32em;font-family:'Cinzel',serif;font-weight:600;font-size:clamp(30px,5vw,72px);letter-spacing:.08em;color:#efe0bf;text-shadow:0 0 28px rgba(217,183,122,.35)}
+.cine-word{display:inline-block;animation:cine-word 1.4s cubic-bezier(.2,.7,.2,1) both}
+.cine-once-last{display:inline-flex}
+.cine-dot{display:inline-block;color:#d9b77a;animation:cine-dot .7s ease both}
+
+@keyframes cine-letter{from{opacity:0;transform:translateY(14px);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes cine-line{from{transform:scaleX(0);opacity:0}to{transform:scaleX(1);opacity:1}}
+@keyframes cine-fade{from{opacity:0}to{opacity:1}}
+@keyframes cine-when{from{opacity:0;transform:translateY(10px);letter-spacing:.3em}to{opacity:1;transform:none;letter-spacing:.14em}}
+@keyframes cine-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes cine-title{from{opacity:0;transform:scale(1.06);filter:blur(12px);letter-spacing:.2em}to{opacity:1;transform:none;filter:blur(0);letter-spacing:.06em}}
+@keyframes cine-sentence{from{opacity:0;transform:translateY(8px);filter:blur(5px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes cine-word{from{opacity:0;transform:translateY(18px);filter:blur(10px);letter-spacing:.3em}to{opacity:1;transform:none;filter:blur(0);letter-spacing:.08em}}
+@keyframes cine-dot{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes cine-leak{from{transform:translate(-4%,0)}to{transform:translate(4%,-3%)}}

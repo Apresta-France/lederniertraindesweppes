@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ldtw/scene",
+  "title": "Scène du Dernier Train des Weppes",
+  "description": "Une scène = un dossier scenes/<id>/ contenant scene.json et ses fichiers dédiés dans assets/. Chemins : relatifs au dossier de la scène (assets/fond.png) ou partagés (@shared/audio/music/x.mp3).",
+  "type": "object",
+  "required": ["id", "type", "title"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "description": "Identique au nom du dossier." },
+    "type": { "enum": ["cinematic", "explore"], "description": "cinematic : séquence minutée non interactive. explore : décor point & click." },
+    "title": { "type": "string", "description": "Affiché dans le HUD (explore) et dans les sauvegardes." },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "act": { "type": "string" },
+        "chapter": { "type": "string" },
+        "notes": { "type": "string", "description": "Notes de travail, jamais affichées en jeu." }
+      }
+    },
+    "next": { "type": "string", "description": "cinematic : scène lancée à la fin." },
+    "chrome": {
+      "type": "object",
+      "description": "cinematic : habillage.",
+      "properties": {
+        "background": { "type": "string", "description": "Fond CSS." },
+        "letterbox": { "type": "boolean", "description": "Bandes noires haut et bas." },
+        "vignette": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rainCanvas": { "type": "boolean", "description": "Prépare la couche de pluie." }
+      }
+    },
+    "skip": {
+      "type": "object",
+      "properties": {
+        "mode": { "enum": ["end", "marker", "none"], "description": "end : termine la scène. marker : saute au prochain repère (do: marker), puis termine." },
+        "label": { "type": "string" }
+      }
+    },
+    "timeline": { "type": "array", "items": { "$ref": "#/$defs/timelineItem" } },
+
+    "size": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2, "description": "explore : taille de référence du décor en pixels. Toutes les coordonnées sont dans ce repère." },
+    "background": {
+      "type": "object",
+      "required": ["src"],
+      "properties": { "src": { "type": "string" }, "alt": { "type": "string", "description": "Description du décor lue par les lecteurs d'écran à l'entrée." } }
+    },
+    "music": {
+      "type": "object",
+      "properties": { "src": { "type": "string" }, "fade": { "type": "integer" } }
+    },
+    "objectives": { "type": "object", "additionalProperties": { "type": "string" }, "description": "id → libellé affiché." },
+    "onEnter": { "$ref": "#/$defs/actions" },
+    "decor": { "type": "array", "items": { "$ref": "#/$defs/decor" } },
+    "objects": { "type": "array", "items": { "$ref": "#/$defs/object" }, "description": "Ordre du tableau = ordre d'affichage (le dernier est au premier plan)." },
+    "panels": { "type": "object", "additionalProperties": { "$ref": "#/$defs/panel" }, "description": "Fiches d'examen ouvertes par l'action examine." }
+  },
+
+  "$defs": {
+    "rect": { "type": "array", "items": { "type": "number" }, "minItems": 4, "maxItems": 4, "description": "[x, y, largeur, hauteur] dans le repère size." },
+    "kenburns": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3, "description": "[échelle, décalage X %, décalage Y %]" },
+
+    "timelineItem": {
+      "type": "object",
+      "required": ["at", "do"],
+      "properties": {
+        "at": { "type": "integer", "minimum": 0, "description": "Instant en millisecondes depuis le début de la scène." },
+        "do": { "enum": ["card", "shot", "caption", "music", "rain", "ambience", "clear", "fadeLayers", "logo", "fx", "clockTicks", "marker", "end"] }
+      },
+      "allOf": [
+        { "if": { "properties": { "do": { "const": "card" } } }, "then": { "properties": {
+          "style": { "enum": ["once", "date", "act"] },
+          "eyebrow": { "type": "string" },
+          "title": { "type": "string" },
+          "titleEffect": { "enum": ["none", "letters", "words"] },
+          "subtitle": { "type": "string", "description": "HTML court autorisé : <sup>, <em>, <span>." },
+          "lines": { "type": "array", "items": { "type": "object", "properties": { "at": { "type": "integer" }, "text": { "type": "string" }, "emphasis": { "type": "boolean" } } } },
+          "dots": { "type": "integer" },
+          "ornament": { "enum": ["none", "middle", "both"] },
+          "until": { "type": "integer", "description": "Instant de disparition." },
+          "out": { "type": "integer", "description": "Durée du fondu de sortie." }
+        } } },
+        { "if": { "properties": { "do": { "const": "shot" } } }, "then": { "required": ["src", "duration"], "properties": {
+          "src": { "type": "string" },
+          "frames": { "type": "array", "items": { "type": "string" }, "description": "Images superposées révélées par clockTicks." },
+          "duration": { "type": "integer" },
+          "fade": { "type": "integer", "description": "Fondu enchaîné avec le plan précédent (0 = cut)." },
+          "from": { "$ref": "#/$defs/kenburns" },
+          "to": { "$ref": "#/$defs/kenburns" },
+          "ease": { "type": "string" },
+          "dark": { "type": "boolean" },
+          "shake": { "type": "number", "description": "Amplitude de secousse en pixels (atténuée si l'option « Réduire les effets » est active)." },
+          "flashes": { "type": "array", "items": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 }, "description": "[[délai ms, intensité], …] éclairs + tonnerre." },
+          "rain": { "type": "number", "description": "Intensité visuelle de la pluie pendant le plan." },
+          "sfx": { "type": "array", "items": { "enum": ["rumble", "thunder"] } },
+          "description": { "type": "string", "description": "Audiodescription : lue par les lecteurs d'écran au début du plan." }
+        } } },
+        { "if": { "properties": { "do": { "const": "caption" } } }, "then": { "properties": {
+          "kicker": { "type": "string" }, "title": { "type": "string" }, "text": { "type": "string" }, "duration": { "type": "integer" }
+        } } },
+        { "if": { "properties": { "do": { "const": "music" } } }, "then": { "properties": {
+          "src": { "type": "string", "description": "Absent : ne change que le volume de la piste en cours." },
+          "volume": { "type": "number", "description": "0 à 1, relatif au réglage Musique du joueur." },
+          "fade": { "type": "integer" }, "loop": { "type": "boolean" }
+        } } },
+        { "if": { "properties": { "do": { "const": "rain" } } }, "then": { "properties": {
+          "level": { "type": "number", "description": "Pluie visible." }, "sound": { "type": "number", "description": "Volume du bruit de pluie." }
+        } } },
+        { "if": { "properties": { "do": { "const": "ambience" } } }, "then": { "properties": {
+          "kind": { "enum": ["wind"] }, "level": { "type": "number" }
+        } } },
+        { "if": { "properties": { "do": { "const": "fadeLayers" } } }, "then": { "properties": { "duration": { "type": "integer" } } } },
+        { "if": { "properties": { "do": { "const": "logo" } } }, "then": { "properties": {
+          "src": { "type": "string" }, "alt": { "type": "string" }, "duration": { "type": "integer" }
+        } } },
+        { "if": { "properties": { "do": { "const": "fx" } } }, "then": { "properties": {
+          "name": { "enum": ["leak"] }, "on": { "type": "boolean" }
+        } } },
+        { "if": { "properties": { "do": { "const": "clockTicks" } } }, "then": { "properties": {
+          "advanceAt": { "type": "array", "items": { "type": "integer" }, "description": "Numéros de tic auxquels l'image suivante de frames apparaît ; la dernière tombe sur le « clac » final." }
+        } } },
+        { "if": { "properties": { "do": { "const": "end" } } }, "then": { "properties": {
+          "fadeOut": { "type": "integer" }, "keepMusic": { "type": "boolean", "description": "La musique continue dans la scène suivante." }
+        } } }
+      ]
+    },
+
+    "decor": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "enum": ["shape", "shadow", "vignette"] },
+        "layer": { "enum": ["below", "above"], "description": "below : sous les objets. above (défaut pour shape/vignette) : par-dessus." },
+        "rect": { "$ref": "#/$defs/rect" },
+        "center": { "type": "array", "items": { "type": "number" }, "description": "shadow : centre [x, y]." },
+        "radius": { "description": "shadow : [demi-largeur, demi-hauteur]. shape : border-radius CSS." },
+        "opacity": { "type": "number" },
+        "rotate": { "type": "number" },
+        "background": { "type": "string", "description": "Fond CSS (dégradé…)." },
+        "blend": { "enum": ["normal", "screen", "multiply", "overlay", "lighten"] },
+        "animation": { "enum": ["flicker", "pulse", "tv-flicker"] },
+        "preset": { "enum": ["crt", "crt-on"], "description": "crt : lignes d'écran cathodique. crt-on : éclair d'allumage à chaque apparition." },
+        "when": { "$ref": "#/$defs/condition", "description": "Visible seulement si la condition est vraie." }
+      }
+    },
+
+    "object": {
+      "type": "object",
+      "required": ["id", "name", "rect"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Nom affiché au survol et lu par les lecteurs d'écran." },
+        "rect": { "$ref": "#/$defs/rect" },
+        "sprite": { "type": "string", "description": "Calque détouré. Absent : zone invisible." },
+        "hit": { "enum": ["alpha", "rect"], "description": "alpha (défaut si sprite) : clic au pixel près. rect : tout le rectangle." },
+        "character": { "type": "string", "description": "Personnage animé (shared/characters/<id>) affiché à la place du sprite." },
+        "bubble": { "type": "array", "items": { "type": "number" }, "description": "Position [x, y] de la bulle « parle »." },
+        "state": { "type": "string", "description": "État initial." },
+        "states": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "sprite": { "type": "string" },
+              "sound": { "type": "object", "properties": { "src": { "type": "string" }, "loop": { "type": "boolean" }, "onEnded": { "$ref": "#/$defs/actions" } } }
+            }
+          }
+        },
+        "hidden": { "type": "boolean" },
+        "description": { "type": "string", "description": "Texte dit à l'examen si onUse est absent." },
+        "onUse": { "$ref": "#/$defs/actions" }
+      }
+    },
+
+    "panel": {
+      "type": "object",
+      "properties": {
+        "kicker": { "type": "string" },
+        "title": { "type": "string" },
+        "image": { "type": "array", "items": { "type": "object", "properties": { "src": { "type": "string" }, "when": { "$ref": "#/$defs/condition" } } }, "description": "La première image dont la condition est vraie est affichée." },
+        "text": { "type": "string" },
+        "facts": { "type": "array", "items": { "type": "object", "properties": { "label": { "type": "string" }, "value": { "type": "string" }, "when": { "$ref": "#/$defs/condition" } } } },
+        "actions": { "type": "array", "items": { "type": "object", "properties": { "label": { "type": "string" }, "style": { "enum": ["gold", "ghost"] }, "when": { "$ref": "#/$defs/condition" }, "do": { "$ref": "#/$defs/actions" } } } }
+      }
+    },
+
+    "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+    "action": {
+      "type": "object",
+      "required": ["do"],
+      "properties": {
+        "do": {
+          "enum": ["say", "sfx", "voice", "setState", "cycleState", "set", "inc", "take", "give", "remove", "hide", "show", "note", "objective", "examine", "panelNote", "close", "goto", "wait", "if", "menu"],
+          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src} · voice {character?, src | pool+pick, subtitle?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · objective {set?, complete?, once?} · examine {panel} · panelNote {text} · close · goto {scene} · wait {ms} · if {cond, then[], else[]} · menu"
+        }
+      }
+    },
+
+    "condition": {
+      "type": "object",
+      "description": "{var, eq|ne|gt|gte|lt|lte|in} · {state: objet, eq|ne|in} · {has: objet d'inventaire} · {objective: id} · {done: id} · {all: []} · {any: []} · {not: {}}"
+    }
+  }
+}

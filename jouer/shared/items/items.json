@@ -1,0 +1,7 @@
+{
+  "lunettes": {
+    "name": "Les lunettes de Gisèle",
+    "icon": "@shared/items/lunettes.png",
+    "desc": "Des lunettes de lecture à monture dorée. Gisèle ne s'en sépare jamais d'habitude."
+  }
+}

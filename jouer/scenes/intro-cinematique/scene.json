@@ -1,0 +1,46 @@
+{
+  "id": "intro-cinematique",
+  "type": "cinematic",
+  "title": "Cinématique d'ouverture",
+  "meta": { "chapter": "Prologue", "notes": "L'orage, l'effondrement de la gare, l'horloge qui repart à 17 h 46." },
+  "next": "acte1-arrivee",
+  "chrome": { "letterbox": true, "vignette": 0.65, "rainCanvas": true },
+  "skip": { "mode": "end", "label": "Cliquer pour passer" },
+  "timeline": [
+    {
+      "at": 0, "do": "card", "style": "date",
+      "title": "Fournes-en-Weppes", "titleEffect": "letters",
+      "ornament": "middle", "subtitle": "nuit du 1<sup>er</sup> au 2 novembre 2026",
+      "until": 5600, "out": 1100
+    },
+    { "at": 2500, "do": "music", "src": "assets/intro.mp3", "volume": 1, "fade": 2500, "loop": false },
+    { "at": 5000, "do": "rain", "level": 0.7, "sound": 0.1 },
+    { "at": 6600, "do": "shot", "src": "assets/intro05.png", "duration": 3600, "fade": 1400, "from": [1.2, 0, 1], "to": [1.03, 0, -2], "flashes": [[900, 1], [1450, 0.5]], "description": "" },
+    { "at": 9800, "do": "shot", "src": "assets/intro01.png", "duration": 5600, "fade": 1300, "from": [1.02, 0, 0], "to": [1.15, 0, 1.5], "flashes": [[3400, 0.45]], "description": "" },
+    { "at": 15000, "do": "shot", "src": "assets/intro02.png", "duration": 4400, "fade": 1000, "from": [1.14, 3, 0], "to": [1.1, -3, 0], "description": "" },
+    { "at": 19000, "do": "shot", "src": "assets/intro03.png", "duration": 3600, "fade": 1000, "from": [1.2, 0, -3], "to": [1.06, 0, 2], "flashes": [[1700, 0.4]], "description": "" },
+    { "at": 22200, "do": "shot", "src": "assets/intro04.png", "duration": 4400, "fade": 0, "from": [1, 0, 0], "to": [1.09, 0, 0], "dark": true, "flashes": [[0, 1], [2300, 0.55]], "description": "" },
+    { "at": 26600, "do": "shot", "src": "assets/intro06.png", "duration": 1800, "fade": 0, "from": [1, 0, 0], "to": [1.08, 0, 0], "shake": 6, "flashes": [[0, 1.2], [550, 0.7]], "description": "" },
+    { "at": 28400, "do": "shot", "src": "assets/intro07.png", "duration": 1600, "fade": 0, "from": [1.02, 0, 0], "to": [1.28, 0, 2], "shake": 11, "flashes": [[0, 0.9]], "description": "" },
+    { "at": 30000, "do": "shot", "src": "assets/intro08.png", "duration": 3000, "fade": 0, "from": [1.05, 0, 0], "to": [1.2, 0, -2], "shake": 18, "sfx": ["rumble"], "description": "" },
+    { "at": 33000, "do": "clear" },
+    { "at": 33000, "do": "rain", "level": 0, "sound": 0 },
+    { "at": 33000, "do": "music", "volume": 0.35, "fade": 900 },
+    {
+      "at": 33800, "do": "shot", "src": "assets/intro09_05_17h42.png",
+      "frames": ["assets/intro09_04_17h43.png", "assets/intro09_03_17h44.png", "assets/intro09_02_17h45.png", "assets/intro09_01_17h46.png"],
+      "duration": 6600, "fade": 1400, "from": [1.02, 0, 0], "to": [1.16, -2, 0], "rain": 0.3, "description": ""
+    },
+    { "at": 34000, "do": "clockTicks", "advanceAt": [3, 10, 18] },
+    { "at": 34000, "do": "rain", "sound": 0.04 },
+    { "at": 40400, "do": "music", "volume": 1, "fade": 3000 },
+    { "at": 40400, "do": "ambience", "kind": "wind", "level": 0.5 },
+    { "at": 40400, "do": "rain", "sound": 0.12 },
+    { "at": 40400, "do": "shot", "src": "assets/intro10.png", "duration": 6800, "fade": 1800, "from": [1.12, 2, 0], "to": [1.04, -2, 0], "rain": 0.8, "description": "" },
+    { "at": 47000, "do": "rain", "level": 0, "sound": 0 },
+    { "at": 47000, "do": "ambience", "kind": "wind", "level": 0 },
+    { "at": 47000, "do": "fadeLayers", "duration": 1400 },
+    { "at": 47900, "do": "logo", "src": "@shared/branding/logo_intro.png", "alt": "Le Dernier Train des Weppes", "duration": 2400 },
+    { "at": 52600, "do": "end", "fadeOut": 1400 }
+  ]
+}
