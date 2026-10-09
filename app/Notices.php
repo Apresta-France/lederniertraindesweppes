@@ -76,6 +76,36 @@ final class Notices
         );
     }
 
+    public static function gameAccess(array $key): void
+    {
+        $link = GameAccess::link($key);
+        $name = trim((string) ($key['label'] ?? ''));
+        $hello = $name !== '' ? 'Bonjour ' . $name . ',' : 'Bonjour,';
+        $code = '<p style="margin:0 0 16px;padding:14px 16px;border:1px solid #d9b77a;font-family:Consolas,Menlo,monospace;font-size:18px;letter-spacing:2px;text-align:center;color:#efe0bf;">' . e((string) $key['code']) . '</p>';
+        $built = EmailTemplate::compose([
+            'preheader' => 'Votre accès au prototype du Dernier Train des Weppes est prêt.',
+            'heading' => 'Votre billet est prêt',
+            'html' => EmailTemplate::paragraph(e($hello))
+                . EmailTemplate::paragraph('Vous êtes invité à tester le prototype du Dernier Train des Weppes, le jeu d\'aventure de Groupe Tercium.')
+                . EmailTemplate::paragraph('Le bouton ci-dessous ouvre le jeu et retient votre accès sur ce navigateur. Sur un autre appareil, saisissez cette clé :')
+                . $code
+                . EmailTemplate::paragraph('Cette invitation vous est personnelle : merci de ne pas la partager.'),
+            'text' => $hello . "\n\nVous êtes invité à tester le prototype du Dernier Train des Weppes, le jeu d'aventure de Groupe Tercium.\n\nOuvrir le jeu :\n" . $link
+                . "\n\nSur un autre appareil, saisissez cette clé : " . $key['code']
+                . "\n\nCette invitation vous est personnelle : merci de ne pas la partager.",
+            'button_label' => 'Monter à bord',
+            'button_url' => $link,
+            'reason' => 'Vous recevez ce message parce que l\'équipe du Dernier Train des Weppes vous a invité à tester le jeu.',
+        ]);
+        Mailer::send(
+            (string) $key['email'],
+            'Votre accès au prototype du Dernier Train des Weppes',
+            $built['html'],
+            $built['text'],
+            ['to_name' => $name]
+        );
+    }
+
     public static function test(string $to): void
     {
         $built = EmailTemplate::compose([

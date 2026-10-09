@@ -88,6 +88,18 @@ final class Database
                 ip_hash TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS game_keys (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT NOT NULL UNIQUE,
+                label TEXT,
+                email TEXT,
+                active INTEGER NOT NULL DEFAULT 1,
+                uses INTEGER NOT NULL DEFAULT 0,
+                last_used_at TEXT,
+                sent_at TEXT,
+                mail_error TEXT,
+                created_at TEXT NOT NULL
+            );
             CREATE INDEX IF NOT EXISTS idx_visits_day ON visits(day);
             CREATE INDEX IF NOT EXISTS idx_visits_path ON visits(path);
             CREATE INDEX IF NOT EXISTS idx_subscribers_status ON subscribers(status);

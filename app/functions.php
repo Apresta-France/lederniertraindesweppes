@@ -72,6 +72,12 @@ function asset(string $path): string
     return '/' . ltrim($path, '/');
 }
 
+function request_is_https(): bool
+{
+    return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+}
+
 function app_base_url(): string
 {
     $base = rtrim((string) Env::get('APP_URL', ''), '/');

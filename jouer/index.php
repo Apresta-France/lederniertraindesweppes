@@ -2,7 +2,22 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/config.php';
+require dirname(__DIR__) . '/app/bootstrap.php';
+require_once __DIR__ . '/config.php';
+
+// L'éditeur intègre le jeu dans une iframe (?embed=1).
+header_remove('Content-Security-Policy');
+header('X-Frame-Options: SAMEORIGIN');
+header('Cache-Control: no-store');
+
+$ready = GameAccess::ready();
+$accessError = $ready ? GameAccess::handleRequest() : null;
+if (!$ready || !GameAccess::allowed()) {
+    http_response_code(403);
+    header('X-Robots-Tag: noindex, nofollow');
+    render('game/gate', ['error' => $ready ? $accessError : 'Le site n\'est pas encore installé.'], null);
+    exit;
+}
 
 $game = json_decode((string) @file_get_contents(__DIR__ . '/game.json'), true) ?: [];
 $version = (string) ($game['version'] ?? '0');

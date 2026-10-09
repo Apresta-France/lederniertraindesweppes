@@ -23,6 +23,7 @@ td.actions form{display:inline}
 .badge.ok{color:var(--gold)}
 .badge.wait{color:var(--sand)}
 .badge.off{color:var(--dim)}
+.key-code{font-family:Consolas,Menlo,monospace;letter-spacing:.06em;color:var(--cream);white-space:nowrap}
 ul.plain{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 ul.plain li{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
 ul.plain a{color:var(--cream);text-decoration:none}

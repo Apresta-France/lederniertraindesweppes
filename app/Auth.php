@@ -41,7 +41,7 @@ final class Auth
     private static function returnable(string $path): bool
     {
         return (str_starts_with($path, '/admin') && !str_starts_with($path, '/admin/connexion'))
-            || str_starts_with($path, '/jouer/editor/');
+            || str_starts_with($path, '/jouer/');
     }
 
     public static function login(int $id): void

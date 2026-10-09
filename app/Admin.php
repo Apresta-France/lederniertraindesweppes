@@ -182,6 +182,82 @@ final class Admin
         redirect('/admin/messages');
     }
 
+    public static function accessKeys(array $params = []): void
+    {
+        Auth::require();
+        $total = (int) (Database::one('SELECT COUNT(*) AS n FROM game_keys')['n'] ?? 0);
+        [$page, $pages, $offset] = self::pageWindow($total, 30);
+        self::view('admin/access', 'Accès au jeu', 'acces', [
+            'rows' => Database::all('SELECT * FROM game_keys ORDER BY id DESC LIMIT 30 OFFSET ' . $offset),
+            'active' => (int) (Database::one('SELECT COUNT(*) AS n FROM game_keys WHERE active = 1')['n'] ?? 0),
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+        ]);
+    }
+
+    public static function createAccessKey(array $params = []): void
+    {
+        Auth::require();
+        Csrf::check();
+        $label = single_line((string) ($_POST['label'] ?? ''), 80);
+        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+        $send = ($_POST['send'] ?? '') === '1';
+        if ($label === '' && $email === '') {
+            flash('err', 'Indiquez au moins un nom ou une adresse.');
+            redirect('/admin/acces');
+        }
+        if ($email !== '' && !valid_email($email)) {
+            flash('err', 'L\'adresse e-mail est invalide.');
+            redirect('/admin/acces');
+        }
+        if ($send && $email === '') {
+            flash('err', 'Indiquez une adresse pour envoyer la clé.');
+            redirect('/admin/acces');
+        }
+        $code = GameAccess::generate();
+        $id = Database::insert(
+            'INSERT INTO game_keys (code, label, email, created_at) VALUES (?, ?, ?, ?)',
+            [$code, $label !== '' ? $label : null, $email !== '' ? $email : null, date('Y-m-d H:i:s')]
+        );
+        if ($send) {
+            self::mailAccessKey($id, $code);
+        } else {
+            flash('ok', 'Clé ' . $code . ' créée.');
+        }
+        redirect('/admin/acces');
+    }
+
+    public static function toggleAccessKey(array $params = []): void
+    {
+        Auth::require();
+        Csrf::check();
+        $row = Database::one('SELECT * FROM game_keys WHERE id = ?', [(int) ($_POST['id'] ?? 0)]);
+        if ($row) {
+            $active = (int) $row['active'] === 1 ? 0 : 1;
+            Database::exec('UPDATE game_keys SET active = ? WHERE id = ?', [$active, $row['id']]);
+            flash('ok', 'Clé ' . $row['code'] . ($active ? ' activée.' : ' désactivée.'));
+        }
+        redirect('/admin/acces');
+    }
+
+    public static function sendAccessKey(array $params = []): void
+    {
+        Auth::require();
+        Csrf::check();
+        self::mailAccessKey((int) ($_POST['id'] ?? 0));
+        redirect('/admin/acces');
+    }
+
+    public static function deleteAccessKey(array $params = []): void
+    {
+        Auth::require();
+        Csrf::check();
+        Database::exec('DELETE FROM game_keys WHERE id = ?', [(int) ($_POST['id'] ?? 0)]);
+        flash('ok', 'Clé supprimée.');
+        redirect('/admin/acces');
+    }
+
     public static function stats(array $params = []): void
     {
         Auth::require();
@@ -275,6 +351,27 @@ final class Admin
         );
         flash('ok', 'Compte administrateur mis à jour.');
         redirect('/admin/environnement');
+    }
+
+    private static function mailAccessKey(int $id, string $created = ''): void
+    {
+        $row = Database::one('SELECT * FROM game_keys WHERE id = ?', [$id]);
+        if (!$row || !valid_email((string) $row['email'])) {
+            flash('err', 'Aucune adresse enregistrée pour cette clé.');
+            return;
+        }
+        $lead = $created !== '' ? 'Clé ' . $created . ' créée. ' : '';
+        try {
+            Notices::gameAccess($row);
+            Database::exec('UPDATE game_keys SET sent_at = ?, mail_error = NULL WHERE id = ?', [date('Y-m-d H:i:s'), $row['id']]);
+            $host = strtolower((string) Env::get('SMTP_HOST', ''));
+            flash('ok', $lead . ($host === 'log' || $host === ''
+                ? 'Invitation écrite dans storage/logs (aucun serveur SMTP configuré).'
+                : 'Invitation envoyée à ' . $row['email'] . '.'));
+        } catch (Throwable $e) {
+            Database::exec('UPDATE game_keys SET mail_error = ? WHERE id = ?', [single_line($e->getMessage(), 240), $row['id']]);
+            flash('err', $lead . 'L\'envoi a échoué : ' . single_line($e->getMessage(), 180));
+        }
     }
 
     private static function gameDebugLocked(): bool

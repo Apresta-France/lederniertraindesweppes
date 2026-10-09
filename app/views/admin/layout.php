@@ -20,6 +20,7 @@
         'dashboard' => ['/admin', 'Tableau de bord'],
         'inscrits' => ['/admin/inscrits', 'Inscrits'],
         'messages' => ['/admin/messages', 'Messages'],
+        'acces' => ['/admin/acces', 'Accès au jeu'],
         'statistiques' => ['/admin/statistiques', 'Statistiques'],
         'environnement' => ['/admin/environnement', 'Environnement'],
     ];

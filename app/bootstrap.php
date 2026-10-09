@@ -18,14 +18,11 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
-$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
-
 session_name('LDTWSESSID');
 session_set_cookie_params([
     'lifetime' => 0,
     'path' => '/',
-    'secure' => $https,
+    'secure' => request_is_https(),
     'httponly' => true,
     'samesite' => 'Lax',
 ]);
