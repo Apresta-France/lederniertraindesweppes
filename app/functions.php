@@ -342,6 +342,13 @@ function app_name(): string
     return $name !== '' ? $name : 'Le Dernier Train des Weppes';
 }
 
+function game_editor_enabled(): bool
+{
+    require_once ROOT . '/jouer/config.php';
+    return is_file(ROOT . '/jouer/editor/index.php')
+        && strtolower(trim((string) jeu_env('GAME_EDITOR', 'on'))) !== 'off';
+}
+
 function legal_value(string $key, string $fallback): string
 {
     $value = trim((string) Env::get($key, ''));

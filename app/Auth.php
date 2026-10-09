@@ -23,17 +23,25 @@ final class Auth
         return Database::one('SELECT id, email, created_at FROM admins WHERE id = ?', [$id]);
     }
 
-    public static function require(): void
+    public static function require(string $returnTo = ''): void
     {
         if (self::check()) {
             return;
         }
-        $path = request_path();
-        if (str_starts_with($path, '/admin')) {
+        if ($returnTo === '') {
             $query = $_SERVER['QUERY_STRING'] ?? '';
-            $_SESSION['intended'] = $path . ($query !== '' ? '?' . $query : '');
+            $returnTo = request_path() . ($query !== '' ? '?' . $query : '');
+        }
+        if (self::returnable($returnTo)) {
+            $_SESSION['intended'] = $returnTo;
         }
         redirect('/admin/connexion');
+    }
+
+    private static function returnable(string $path): bool
+    {
+        return (str_starts_with($path, '/admin') && !str_starts_with($path, '/admin/connexion'))
+            || str_starts_with($path, '/jouer/editor/');
     }
 
     public static function login(int $id): void
@@ -56,7 +64,7 @@ final class Auth
     {
         $target = (string) ($_SESSION['intended'] ?? '');
         unset($_SESSION['intended']);
-        if ($target !== '' && str_starts_with($target, '/admin') && !str_starts_with($target, '/admin/connexion')) {
+        if ($target !== '' && self::returnable($target)) {
             return safe_local_path($target);
         }
         return $fallback;

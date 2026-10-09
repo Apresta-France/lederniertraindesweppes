@@ -42,6 +42,7 @@ header('Cache-Control: no-store');
             <button type="button" id="btn-save" class="btn btn-gold" disabled title="Enregistrer (Ctrl+S)">Enregistrer</button>
             <button type="button" id="btn-test" class="btn" disabled title="Tester la version en cours dans un nouvel onglet">Tester</button>
             <a class="btn btn-ghost" href="../" target="_blank" rel="noopener">Ouvrir le jeu</a>
+            <a class="btn btn-ghost" href="/admin">Administration</a>
             <span class="user" title="Connecté"><?= e($session['email']) ?></span>
         </div>
     </header>

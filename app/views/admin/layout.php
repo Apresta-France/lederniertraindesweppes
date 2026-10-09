@@ -23,6 +23,9 @@
         'statistiques' => ['/admin/statistiques', 'Statistiques'],
         'environnement' => ['/admin/environnement', 'Environnement'],
     ];
+    if (game_editor_enabled()) {
+        $links['editeur'] = ['/jouer/editor/', 'Éditeur de scènes'];
+    }
     foreach ($links as $key => [$href, $label]): ?>
       <a href="<?= e($href) ?>"<?= $section === $key ? ' aria-current="page"' : '' ?>><?= e($label) ?></a>
     <?php endforeach; ?>

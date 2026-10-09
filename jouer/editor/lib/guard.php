@@ -3,11 +3,9 @@
 declare(strict_types=1);
 
 require dirname(__DIR__, 3) . '/app/bootstrap.php';
-require dirname(__DIR__, 2) . '/config.php';
-
 function editor_enabled(): bool
 {
-    return strtolower(trim((string) jeu_env('GAME_EDITOR', 'on'))) !== 'off';
+    return game_editor_enabled();
 }
 
 /**
@@ -32,7 +30,7 @@ function editor_guard(bool $api): array
         if ($api) {
             json_out(['error' => 'Session expirée : reconnectez-vous à l’administration.'], 401);
         }
-        redirect('/admin/connexion');
+        Auth::require('/jouer/editor/');
     }
 
     return ['email' => (string) $user['email'], 'csrf' => Csrf::token()];
