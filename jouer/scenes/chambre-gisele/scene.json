@@ -38,7 +38,8 @@
       "onUse": [{ "do": "voice", "src": "assets/fenetre.mp3" }, { "do": "say", "text": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir." }] },
     { "id": "lit", "name": "Le lit", "rect": [0, 346, 334, 401], "sprite": "assets/lit_fait.png", "description": "Le lit est fait au carré.",
       "onUse": [{ "do": "voice", "src": "assets/lit.mp3" }, { "do": "say", "text": "Le lit est fait au carré." }] },
-    { "id": "fauteuil", "name": "Le fauteuil de Gisèle", "rect": [1120, 355, 320, 338], "sprite": "assets/fauteuil_vide.png", "description": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre." },
+    { "id": "fauteuil", "name": "Le fauteuil de Gisèle", "rect": [1120, 355, 320, 338], "sprite": "assets/fauteuil_vide.png", "description": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre.",
+      "onUse": [{ "do": "voice", "src": "assets/fauteuil.mp3" }, { "do": "say", "text": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre." }] },
     {
       "id": "gisele", "name": "Gisèle", "rect": [1126, 346, 184, 351], "character": "gisele", "bubble": [1218, 330],
       "onUse": [
@@ -111,7 +112,7 @@
         } },
         { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [
           { "do": "wait", "ms": 2000 },
-          { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [{ "do": "voice", "src": "assets/jarrive_gisele.mp3", "subtitle": "J'arrive, Gisèle !" }] }
+          { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [{ "do": "voice", "src": "assets/jarrive_gisele.mp3" }] }
         ] }
       ]
     },

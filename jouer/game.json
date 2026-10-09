@@ -11,6 +11,7 @@
   ],
   "characters": ["gisele"],
   "items": "shared/items/items.json",
+  "hud": { "emptySlotVoice": "@shared/audio/rien.mp3" },
   "shell": {
     "menuMusic": "@shared/audio/music/silent_menu.mp3",
     "voicePreview": { "character": "gisele", "pool": "calibration" }

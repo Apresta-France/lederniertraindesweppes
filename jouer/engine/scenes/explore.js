@@ -169,7 +169,7 @@ export class ExploreScene extends Scene {
         </div>
         <button type="button" class="room-pill room-menu room-ui">Menu</button>
         <div class="room-bar room-ui">
-          <div class="room-slots" role="group" aria-label="Inventaire">${'<button type="button" class="room-slot" disabled aria-label="Emplacement vide"></button>'.repeat(INVENTORY_SIZE)}</div>
+          <div class="room-slots" role="group" aria-label="Inventaire">${'<button type="button" class="room-slot" aria-disabled="true" tabindex="-1" aria-label="Emplacement vide"></button>'.repeat(INVENTORY_SIZE)}</div>
           <div class="room-sep"></div>
           <button type="button" class="room-carnet"><span class="room-nb"></span><span>Carnet</span><span class="room-badge"></span></button>
           <button type="button" class="room-help" aria-label="Aide" title="Aide">?</button>
@@ -233,8 +233,13 @@ export class ExploreScene extends Scene {
     $('.room-carnet').addEventListener('click', () => { this.game.audio.ui('click'); this.showCarnet(); });
     $('.room-help').addEventListener('click', () => { this.game.audio.ui('click'); this.showHelp(); });
     $('.room-slots').addEventListener('click', e => {
-      const s = e.target.closest('.room-slot.full');
+      const s = e.target.closest('.room-slot');
       if (!s) return;
+      if (!s.classList.contains('full')) {
+        const src = this.game.data.game.hud?.emptySlotVoice;
+        if (src) this.speak({ src });
+        return;
+      }
       const it = this.item(s.dataset.item);
       this.game.audio.ui('soft');
       this.say(it.name, it.desc);
@@ -508,7 +513,13 @@ export class ExploreScene extends Scene {
     this.el.querySelectorAll('.room-slot').forEach((s, i) => {
       const id = st.inventory[i];
       s.className = 'room-slot' + (id ? ' full' : '');
-      s.disabled = !id;
+      if (id) {
+        s.removeAttribute('aria-disabled');
+        s.removeAttribute('tabindex');
+      } else {
+        s.setAttribute('aria-disabled', 'true');
+        s.setAttribute('tabindex', '-1');
+      }
       if (!id) {
         s.removeAttribute('data-item');
         s.setAttribute('aria-label', 'Emplacement vide');
