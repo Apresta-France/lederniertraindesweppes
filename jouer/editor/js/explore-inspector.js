@@ -11,6 +11,11 @@ function objectValidator(value) {
   return null;
 }
 
+function stateNames(states) {
+  if (!states || typeof states !== 'object' || Array.isArray(states)) return [];
+  return Object.keys(states);
+}
+
 function decorValidator(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return 'Un objet { … } est attendu.';
   if (!['shape', 'shadow', 'vignette'].includes(value.type)) return 'Le champ « type » doit valoir shape, shadow ou vignette.';
@@ -30,6 +35,29 @@ export function renderExploreNone(scope) {
         h('li', null, 'Suppr : supprimer · Ctrl+D : dupliquer · Échap : désélectionner'),
         h('li', null, 'Cliquer de nouveau au même endroit sélectionne l’objet situé dessous'))),
   ];
+}
+
+function stateFields(scope, p) {
+  const names = () => stateNames(scope.value(p('states')));
+  const select = scope.select({
+    label: 'État initial (state)',
+    path: p('state'),
+    options: () => names().map((name) => [name, name]),
+    emptyLabel: '(aucun)',
+    help: 'État au démarrage. Le décor affiche le calque de cet état. Les pastilles dans la colonne Calques font la même chose.',
+  });
+  const text = scope.text({
+    label: 'État initial (state)',
+    path: p('state'),
+    mono: true,
+    help: 'Nom de l’état de départ. Ajoutez des états ci-dessous pour les choisir dans une liste.',
+  });
+  scope.watch(() => {
+    const has = names().length > 0;
+    select.hidden = !has;
+    text.hidden = has;
+  });
+  return [select, text];
 }
 
 export function renderObjectInspector(scope, index) {
@@ -61,13 +89,13 @@ export function renderObjectInspector(scope, index) {
       scope.check({ label: 'Masqué au départ (hidden)', path: p('hidden') }),
       scope.text({ label: 'Description', path: p('description'), multiline: true, rows: 3, help: 'Texte dit à l’examen quand l’objet n’a pas d’action au clic.' })),
     section('États',
-      scope.text({ label: 'État initial (state)', path: p('state'), mono: true }),
+      ...stateFields(scope, p),
       scope.json({
         label: 'États (states)',
         path: p('states'),
         rows: 5,
         validate: validators.object,
-        help: '{ "nom": { "sprite": "assets/….png", "sound": { "src": "…", "loop": false, "onEnded": [ … ] } } }',
+        help: '{ "off": { "sprite": "assets/….png" }, "on": { "sprite": "…" } }. Le calque affiché est celui de l’état initial.',
       })),
     section('Action au clic (onUse)',
       actionsField(scope, { label: 'Actions', path: p('onUse'), rows: 8 })),

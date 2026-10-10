@@ -401,7 +401,7 @@
     {
       "id": "sandrine",
       "name": "Sandrine",
-      "rect": [1003, 483, 460, 454],
+      "rect": [1212, 146, 460, 454],
       "sprite": "assets/sandrine_porte.png",
       "hidden": true
     },

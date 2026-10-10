@@ -16,6 +16,16 @@ function collectionOf(kind) {
   return kind === 'decor' ? 'decor' : 'objects';
 }
 
+function stateNames(object) {
+  const states = object?.states;
+  if (!states || typeof states !== 'object' || Array.isArray(states)) return [];
+  return Object.keys(states);
+}
+
+function currentState(object) {
+  return typeof object?.state === 'string' ? object.state : '';
+}
+
 /** Visual editor for explore scenes: stage with drag/resize + layer list. */
 export class ExploreEditor {
   constructor({ store, container, ctx }) {
@@ -77,7 +87,9 @@ export class ExploreEditor {
     this.emptyHint = h('p', { class: 'stage-empty' }, 'Aucun fond : choisissez une image dans l’onglet « Scène ».');
     this.objectsLayer = h('div', { class: 'stage-layer' });
     this.decorLayer = h('div', { class: 'stage-layer stage-decor' });
+    this.selState = h('div', { class: 'sel-state', hidden: true });
     this.selBox = h('div', { class: 'sel-box', hidden: true },
+      this.selState,
       HANDLES.map((dir) => h('div', { class: `handle handle-${dir}`, dataset: { dir } })));
     this.stage = h('div', {
       class: 'stage',
@@ -121,9 +133,11 @@ export class ExploreEditor {
       h('div', { class: 'layers-head' }, h('h3', null, 'Décor'), h('div', { class: 'btn-row' }, this.decorAddButtons)),
       this.decorList);
 
+    this.stateSwitch = h('div', { class: 'state-switch', hidden: true, 'data-own-keys': '' });
     this.layersPanel = h('div', { class: 'layers' },
       h('div', { class: 'layers-head' }, h('h3', null, 'Calques'), h('div', { class: 'btn-row' }, this.addButtons)),
       h('div', { class: 'btn-row layer-actions' }, this.btnUp, this.btnDown, this.btnDup, this.btnDel),
+      this.stateSwitch,
       h('p', { class: 'layers-caption' }, 'Premier plan'),
       this.layerList,
       h('p', { class: 'layers-caption' }, 'Arrière-plan'),
@@ -248,7 +262,9 @@ export class ExploreEditor {
       el.classList.toggle('is-zone', !sprite);
       el.classList.toggle('is-hidden', object.hidden === true);
       el.classList.toggle('is-selected', sameSelection(selection, { kind: 'object', index }));
-      el.title = object.name || object.id || '';
+      const names = stateNames(object);
+      const state = currentState(object);
+      el.title = [object.name || object.id || '', names.length ? (names.includes(state) ? state : 'sans état') : ''].filter(Boolean).join(' — ');
     });
 
     const decor = this.showDecor && Array.isArray(scene.decor) ? scene.decor : [];
@@ -265,11 +281,17 @@ export class ExploreEditor {
     });
 
     const selectedBox = selection?.kind === 'decor' && !this.showDecor ? null : this.boxOf(selection);
+    const selectedObject = selection?.kind === 'object' ? objects[selection.index] : null;
+    const selectedStates = stateNames(selectedObject);
+    const selectedState = currentState(selectedObject);
     this.selBox.hidden = !selectedBox;
+    this.selState.hidden = !selectedStates.length;
+    this.selState.textContent = selectedStates.includes(selectedState) ? selectedState : (selectedStates.length ? 'sans état' : '');
     if (selectedBox) {
       this.place(this.selBox, selectedBox);
       this.selBox.classList.toggle('is-locked', this.store.readOnly);
-      this.selInfo.textContent = `Sélection : [${selectedBox.map((n) => Math.round(n * 10) / 10).join(', ')}]`;
+      const stateBit = selectedStates.length ? ` · état ${this.selState.textContent}` : '';
+      this.selInfo.textContent = `Sélection : [${selectedBox.map((n) => Math.round(n * 10) / 10).join(', ')}]${stateBit}`;
     } else {
       this.selInfo.textContent = '';
     }
@@ -298,7 +320,7 @@ export class ExploreEditor {
     const objects = Array.isArray(scene.objects) ? scene.objects : [];
     const decor = Array.isArray(scene.decor) ? scene.decor : [];
     const signature = JSON.stringify([
-      objects.map((o) => [o?.name, o?.id, o?.character, Boolean(o?.sprite || o?.states), o?.hidden]),
+      objects.map((o) => [o?.name, o?.id, o?.character, Boolean(o?.sprite || o?.states), o?.hidden, currentState(o), stateNames(o)]),
       this.showDecor ? decor.map((d) => [d?.id, d?.type]) : null,
       selection,
       this.store.readOnly,
@@ -311,6 +333,8 @@ export class ExploreEditor {
     this.layerList.replaceChildren(...items.map(({ object, index }) => {
       const selected = sameSelection(selection, { kind: 'object', index });
       const [kind, label] = this.layerLabel(object || {});
+      const names = stateNames(object);
+      const state = currentState(object);
       return h('li', null, h('button', {
         type: 'button',
         class: `layer-item${selected ? ' is-selected' : ''}${object?.hidden ? ' is-hidden' : ''}`,
@@ -320,7 +344,9 @@ export class ExploreEditor {
       },
       h('span', { class: `chip chip-${kind}` }, label),
       h('span', { class: 'layer-name' }, object?.name || '(sans nom)'),
-      h('span', { class: 'layer-id' }, object?.id || '?')));
+      h('span', { class: 'layer-id' },
+        object?.id || '?',
+        names.length ? h('span', { class: 'layer-state' }, names.includes(state) ? ` · ${state}` : ' · sans état') : null)));
     }));
     if (!objects.length) this.layerList.append(h('li', { class: 'empty' }, 'Aucun objet.'));
 
@@ -347,7 +373,47 @@ export class ExploreEditor {
     this.btnDel.disabled = readOnly || !hasSel;
     [...this.addButtons, ...this.decorAddButtons].forEach((b) => { b.disabled = readOnly; });
 
+    this.renderStateSwitch();
     if (focusIn) this.layersPanel.querySelector('.layer-item.is-selected')?.focus();
+  }
+
+  renderStateSwitch() {
+    const selection = this.store.selection;
+    const object = selection?.kind === 'object' ? this.itemOf(this.scene, selection) : null;
+    const names = stateNames(object);
+    if (!names.length) {
+      this.stateSwitch.hidden = true;
+      this.stateSwitch.replaceChildren();
+      return;
+    }
+    const state = currentState(object);
+    const known = names.includes(state);
+    const label = object.name || object.id || 'cet objet';
+    let note = 'Affiché sur le décor, et au démarrage de la scène.';
+    if (!state) note = 'Aucun état choisi : le calque de base est affiché.';
+    else if (!known) note = `« ${state} » n’est pas défini dans les états.`;
+    this.stateSwitch.hidden = false;
+    this.stateSwitch.replaceChildren(
+      h('p', { class: 'layers-caption' }, 'État initial'),
+      h('div', { class: 'state-pills', role: 'radiogroup', 'aria-label': `État initial de ${label}` },
+        names.map((name) => h('button', {
+          type: 'button',
+          class: `state-pill${name === state ? ' is-on' : ''}`,
+          role: 'radio',
+          'aria-checked': String(name === state),
+          disabled: this.store.readOnly,
+          title: name === state ? 'État affiché' : `Afficher « ${name} »`,
+          onclick: () => this.setObjectState(selection.index, name),
+        }, name))),
+      h('p', { class: 'state-note' }, note));
+  }
+
+  setObjectState(index, name) {
+    const object = this.scene?.objects?.[index];
+    if (!object || currentState(object) === name || this.store.readOnly) return;
+    this.store.update((scene) => {
+      if (scene.objects?.[index]) scene.objects[index].state = name;
+    }, { source: 'stage', key: `state:${index}` });
   }
 
   onListKey(event, list) {
