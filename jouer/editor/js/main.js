@@ -6,6 +6,7 @@ import { Inspector } from './inspector.js';
 import { SceneProps } from './scene-props.js';
 import { JsonTab } from './json-tab.js';
 import { SoundsTab } from './sounds.js';
+import { GalleryTab } from './gallery.js';
 import { ExploreEditor } from './explore-editor.js';
 import { CinematicEditor } from './cinematic-editor.js';
 import { CharacterEditor } from './character-editor.js';
@@ -35,7 +36,7 @@ const ui = {
   banner: $('banner'),
   newScene: $('btn-new-scene'),
   tabs: [...document.querySelectorAll('[role="tab"]')],
-  panels: { visual: $('panel-visual'), scene: $('panel-scene'), sounds: $('panel-sounds'), json: $('panel-json') },
+  panels: { visual: $('panel-visual'), scene: $('panel-scene'), sounds: $('panel-sounds'), gallery: $('panel-gallery'), json: $('panel-json') },
   validation: $('validation'),
   validationSummary: $('validation-summary'),
   validationList: $('validation-list'),
@@ -87,6 +88,15 @@ new Inspector({ store, container: $('inspector'), ctx });
 new SceneProps({ store, container: ui.panels.scene, ctx });
 const jsonTab = new JsonTab({ store, container: ui.panels.json });
 const soundsTab = new SoundsTab({ store, container: ui.panels.sounds, library });
+const galleryTab = new GalleryTab({
+  store,
+  container: ui.panels.gallery,
+  library,
+  onOpen: (selection) => {
+    selectTab('visual');
+    store.setSelection(selection);
+  },
+});
 
 function showBanner(kind, message, actions = [], tone = 'alert') {
   state.bannerKind = kind;
@@ -422,6 +432,8 @@ function selectTab(name) {
   else jsonTab.hide();
   if (name === 'sounds') soundsTab.show();
   else soundsTab.hide();
+  if (name === 'gallery') galleryTab.show();
+  else galleryTab.hide();
 }
 
 ui.tabs.forEach((tab, index) => {
