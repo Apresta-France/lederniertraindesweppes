@@ -95,6 +95,7 @@ function validateExplore(scene, ctx, { warn, info, checkFile, checkScene }) {
     if (isObj(object.states)) {
       for (const [name, state] of Object.entries(object.states)) {
         if (state?.sprite !== undefined) checkFile(state.sprite, `${label}, état « ${name} »`, selection);
+        if (Array.isArray(state?.frames)) state.frames.forEach((f) => checkFile(f, `${label}, image de l’état « ${name} »`, selection));
         if (state?.sound?.src !== undefined) checkFile(state.sound.src, `${label}, son de l’état « ${name} »`, selection);
       }
       if (object.state && !(object.state in object.states)) warn(`${label} : l’état initial « ${object.state} » n’est pas défini dans states.`, selection);
@@ -137,7 +138,12 @@ function validateExplore(scene, ctx, { warn, info, checkFile, checkScene }) {
           if (action[key] && !(action[key] in objectives)) warn(`${where} : objectif inconnu « ${action[key]} ».`, selection);
         }
       }
-      if (action.do === 'voice' && action.character && !ctx.characters.includes(action.character)) warn(`${where} : personnage inconnu « ${action.character} ».`, selection);
+      if ((action.do === 'voice' || action.do === 'person') && action.character && !ctx.characters.includes(action.character)) warn(`${where} : personnage inconnu « ${action.character} ».`, selection);
+      if (action.do === 'person' && !action.character) warn(`${where} : person sans personnage (character).`, selection);
+      if (action.do === 'memory') {
+        if (!action.id && !action.title) warn(`${where} : souvenir sans id ni titre.`, selection);
+        if (typeof action.image === 'string' && action.image) checkFile(action.image, `${where}, image du souvenir`, selection);
+      }
       if ((action.do === 'voice' || action.do === 'sfx') && typeof action.src === 'string' && !action.pool) checkFile(action.src, `${where}, son`, selection);
       if (action.do === 'if') {
         checkCondition(action.cond, where, selection);
@@ -201,6 +207,15 @@ function validateCinematic(scene, { warn, info, checkFile, checkScene }) {
       if (!item.description?.trim()) info(`${where} : plan sans audiodescription (accessibilité).`, selection);
     }
     if ((item.do === 'music' || item.do === 'logo') && item.src !== undefined) checkFile(item.src, where, selection);
+    if (item.do === 'sfx') {
+      if (item.src) checkFile(item.src, where, selection);
+      else if (!item.name) warn(`${where} : bruitage sans fichier ni son synthétisé.`, selection);
+    }
+    if (item.do === 'voice') {
+      if (!item.src) warn(`${where} : réplique sans fichier audio.`, selection);
+      else checkFile(item.src, where, selection);
+      if (!item.subtitle?.trim() && !scene.sounds?.[item.src]?.caption?.trim()) info(`${where} : réplique sans sous-titre (accessibilité).`, selection);
+    }
     if (item.do === 'logo' && !item.alt?.trim()) warn(`${where} : logo sans texte alternatif.`, selection);
     if (item.do === 'card' && typeof item.until === 'number' && item.until <= item.at) warn(`${where} : « until » doit être postérieur à « at ».`, selection);
   });

@@ -7,7 +7,8 @@
     { "id": "il-etait-une-fois", "label": "« Il était une fois »" },
     { "id": "intro-cinematique", "label": "Cinématique d'ouverture" },
     { "id": "acte1-arrivee", "label": "Acte 1 — titre et arrivée" },
-    { "id": "chambre-gisele", "label": "Chambre de Gisèle" }
+    { "id": "chambre-gisele", "label": "Chambre de Gisèle" },
+    { "id": "aurelie-voiture", "label": "Aurélie arrive en voiture" }
   ],
   "characters": ["gisele", "aurelie"],
   "items": "shared/items/items.json",

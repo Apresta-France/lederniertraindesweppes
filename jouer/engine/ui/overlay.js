@@ -22,9 +22,9 @@ export class Overlay {
     return !this.root.hidden;
   }
 
-  open(html, { single = false, label = '' } = {}) {
+  open(html, { single = false, label = '', cls = '' } = {}) {
     if (!this.isOpen) this.returnTo = document.activeElement;
-    this.card.className = 'room-card' + (single ? ' single' : '');
+    this.card.className = 'room-card' + (single ? ' single' : '') + (cls ? ' ' + cls : '');
     this.card.setAttribute('aria-label', label);
     this.card.innerHTML = `<button type="button" class="room-x" data-close aria-label="Fermer">✕</button>${html}`;
     this.root.hidden = false;

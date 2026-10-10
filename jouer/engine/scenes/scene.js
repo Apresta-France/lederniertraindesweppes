@@ -14,6 +14,7 @@ export class Scene {
     this.disposed = false;
     this.timers = new Set();
     this.cleanups = [];
+    this.running = 0;
   }
 
   url(path) {
@@ -69,8 +70,32 @@ export class Scene {
     this.cleanups.push(fn);
   }
 
+  // Tant qu'une suite d'actions joue, la scène est occupée : le joueur ne peut pas en lancer une autre.
   run(actions, extra = {}) {
-    return runActions(actions, { game: this.game, scene: this, ...extra }).then(() => this.game.autosave());
+    const counted = Array.isArray(actions) && actions.length > 0;
+    if (counted) { this.running++; this.busyChanged(); }
+    return runActions(actions, { game: this.game, scene: this, ...extra })
+      .finally(() => {
+        if (!counted) return;
+        this.running--;
+        if (!this.disposed) this.busyChanged();
+      })
+      .then(() => this.game.autosave());
+  }
+
+  get isBusy() {
+    return this.running > 0;
+  }
+
+  busyChanged() {}
+
+  // Voile noir par-dessus la scène ; bloque aussi les clics jusqu'au démontage.
+  fadeOut(ms = 1500) {
+    const veil = document.createElement('div');
+    veil.className = 'scene-veil';
+    veil.style.animation = `scene-in ${ms}ms ease both`;
+    this.el?.appendChild(veil);
+    return this.sleep(ms);
   }
 
   announce(text) {

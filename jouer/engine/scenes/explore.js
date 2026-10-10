@@ -13,11 +13,17 @@ const HELP = [
   "Survolez le décor : les objets s'éclairent et affichent leur nom.",
   "Au clavier, Tab ou les flèches passent d'un objet à l'autre, Entrée ou Espace l'examine.",
   "Cliquez sur un objet pour l'examiner. Certains changent d'état, d'autres s'ouvrent en grand.",
-  "Les objets ramassés rejoignent l'inventaire, en bas de l'écran. Cliquez dessus pour les examiner.",
-  "Le carnet garde vos objectifs et vos découvertes.",
-  "Échap ferme une fenêtre ouverte, ou ouvre le menu (son, volume, sauvegarde).",
+  "Les objets ramassés rejoignent l'inventaire : ouvrez-le avec l'icône du sac, en bas à gauche, puis cliquez sur un objet pour l'examiner.",
+  "Le carnet garde vos objectifs et vos découvertes. L'objectif en cours s'affiche d'un clic sur la cible, en haut à gauche.",
+  "Échap ferme une fenêtre ou l'inventaire, ou ouvre le menu (son, volume, sauvegarde).",
 ];
+const ICONS = {
+  bag: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h14l-1.2 10.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/><path d="M9.5 13.5h5"/></svg>',
+  map: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5 8.5 4l7 2.5L21 4v13.5L15.5 20l-7-2.5L3 20z"/><path d="M8.5 4v13.5M15.5 6.5V20"/></svg>',
+  target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".9" class="dot"/></svg>',
+};
 const VOLUMES = [['music', 'Musique'], ['voice', 'Voix'], ['sfx', 'Effets']];
+const JOURNAL_TABS = [['objectifs', 'Objectifs'], ['indices', 'Indices'], ['personnes', 'Personnages'], ['souvenirs', 'Souvenirs']];
 
 const masks = new Map();
 function alphaMask(url, w, h) {
@@ -55,6 +61,7 @@ export class ExploreScene extends Scene {
     this.sprites = {};
     this.anims = {};
     this.livePos = {};
+    this.frameTimers = {};
     this.hot = null;
     this.speaking = null;
     this.lastPick = {};
@@ -81,7 +88,8 @@ export class ExploreScene extends Scene {
   spriteOf(def) {
     if (def.character) return this.character(def.character)?.sprites?.idle && this.characterUrl(def.character, this.character(def.character).sprites.idle);
     const st = def.states?.[this.objectState(def.id)];
-    return st?.sprite ? this.url(st.sprite) : def.sprite ? this.url(def.sprite) : '';
+    const own = st?.sprite ?? st?.frames?.[0];
+    return own ? this.url(own) : def.sprite ? this.url(def.sprite) : '';
   }
 
   character(id) {
@@ -96,7 +104,7 @@ export class ExploreScene extends Scene {
     const urls = [this.url(this.data.background?.src)];
     for (const o of this.objects) {
       if (o.sprite) urls.push(this.url(o.sprite));
-      Object.values(o.states || {}).forEach(s => s.sprite && urls.push(this.url(s.sprite)));
+      Object.values(o.states || {}).forEach(s => [s.sprite, ...(s.frames || [])].forEach(p => p && urls.push(this.url(p))));
       if (o.character) {
         const c = this.character(o.character), sp = c?.sprites || {};
         [sp.idle, ...(sp.talk || []), sp.blink].forEach(p => p && urls.push(this.characterUrl(o.character, p)));
@@ -171,20 +179,29 @@ export class ExploreScene extends Scene {
         <div class="room-hotspots" role="group" aria-label="Objets de la scène : ${esc(d.title)}">
           ${order.map(o => `<button type="button" class="room-hotspot" data-id="${esc(o.id)}" style="${this.box(this.rectOf(o))}" aria-label="${esc(o.name)}"${this.isHidden(o.id) ? ' hidden' : ''}></button>`).join('')}
         </div>
-        <div class="room-hud-tl" aria-hidden="true">
-          <div class="room-pill room-place">${esc(d.title)}</div>
-          <div class="room-pill room-objective"><span class="room-nb"></span><span class="room-objective-t"></span></div>
+        <div class="room-hud-tl">
+          <div class="room-place" aria-hidden="true">${esc(d.title)}</div>
+          <button type="button" class="room-objective room-ui" aria-expanded="false" data-tip="Objectif">${ICONS.target}<span class="room-objective-t"></span></button>
         </div>
-        <button type="button" class="room-pill room-menu room-ui">Menu</button>
-        <div class="room-bar room-ui">
-          <div class="room-slots" role="group" aria-label="Inventaire">${'<button type="button" class="room-slot" aria-disabled="true" tabindex="-1" aria-label="Emplacement vide"></button>'.repeat(INVENTORY_SIZE)}</div>
-          <div class="room-sep"></div>
-          <button type="button" class="room-carnet"><span class="room-nb"></span><span>Carnet</span><span class="room-badge"></span></button>
-          <button type="button" class="room-help" aria-label="Aide" title="Aide">?</button>
+        <div class="room-hud-tr room-ui">
+          <button type="button" class="room-tool room-help" aria-label="Aide" data-tip="Aide">?</button>
+          <button type="button" class="room-pill room-menu">Menu</button>
+        </div>
+        <div class="room-dock room-ui">
+          <button type="button" class="room-tool room-map" aria-label="Carte" data-tip="Carte">${ICONS.map}</button>
+          <button type="button" class="room-tool room-carnet" data-tip="Carnet"><span class="room-nb"></span><span class="room-badge"></span></button>
+          <div class="room-inv">
+            <button type="button" class="room-tool room-inv-btn" aria-expanded="false" aria-controls="room-slots-${esc(this.id)}" aria-label="Inventaire" data-tip="Inventaire">${ICONS.bag}</button>
+            <div class="room-slots" id="room-slots-${esc(this.id)}" role="group" aria-label="Inventaire">${'<button type="button" class="room-slot" aria-disabled="true" tabindex="-1" aria-label="Emplacement vide"></button>'.repeat(INVENTORY_SIZE)}</div>
+          </div>
         </div>
         <div class="room-ov room-ui" hidden><div class="room-card" role="dialog" aria-modal="true"></div></div>
         <div class="room-talk" aria-hidden="true"><span></span><i></i><i></i><i></i></div>
-        <div class="room-say" aria-hidden="true"><span class="who"></span><span class="txt"></span></div>        <div class="room-tip" aria-hidden="true"></div>
+        <div class="room-captions" aria-hidden="true">
+          <div class="room-sub"><span class="who"></span><span class="txt"></span></div>
+          <div class="room-say"><span class="who"></span><span class="txt"></span></div>
+        </div>
+        <div class="room-tip" aria-hidden="true"></div>
         <div class="room-dbgxy" aria-hidden="true"></div>
       </div>`;
 
@@ -202,7 +219,6 @@ export class ExploreScene extends Scene {
       if (o.character && el) this.sprites[o.id] = new CharacterSprite(el, [...el.children].slice(0, 4));
       this.updateMask(o);
     }
-    this.notesSeen = this.game.state.data.notes.length;
     this.refreshDecor();
     this.refreshHud();
   }
@@ -227,6 +243,7 @@ export class ExploreScene extends Scene {
       if (e.key !== 'Escape' || e.repeat) return;
       e.stopPropagation();
       if (this.overlay.isOpen) this.overlay.close();
+      else if (this.invOpen) this.toggleInventory(false);
       else { this.game.audio.ui('select'); this.showPause(); }
     }, true);
     this.hotspots.forEach(b => {
@@ -237,11 +254,21 @@ export class ExploreScene extends Scene {
     });
     const $ = s => this.el.querySelector(s);
     $('.room-menu').addEventListener('click', () => { this.game.audio.ui('select'); this.showPause(); });
-    $('.room-carnet').addEventListener('click', () => { this.game.audio.ui('click'); this.showCarnet(); });
-    $('.room-help').addEventListener('click', () => { this.game.audio.ui('click'); this.showHelp(); });
+    $('.room-carnet').addEventListener('click', () => {
+      if (this.isBusy) return;
+      this.game.audio.ui('click');
+      const unseen = this.journalUnseen();
+      this.showCarnet(JOURNAL_TABS.map(([id]) => id).find(id => unseen[id]));
+    });
+    $('.room-map').addEventListener('click', () => { if (this.isBusy) return; this.game.audio.ui('click'); this.showMap(); });
+    $('.room-help').addEventListener('click', () => { if (this.isBusy) return; this.game.audio.ui('click'); this.showHelp(); });
+    $('.room-inv-btn').addEventListener('click', () => { this.game.audio.ui('soft'); this.toggleInventory(); });
+    $('.room-objective').addEventListener('click', () => { this.game.audio.ui('soft'); this.toggleObjective(); });
+    $('.room-inv').addEventListener('pointerenter', () => { if (this.invPeeking) this.toggleInventory(true); });
     $('.room-slots').addEventListener('click', e => {
       const s = e.target.closest('.room-slot');
-      if (!s) return;
+      if (!s || this.isBusy) return;
+      if (this.invPeeking) this.toggleInventory(true);
       if (!s.classList.contains('full')) {
         const src = this.game.data.game.hud?.emptySlotVoice;
         if (src) this.speak({ src });
@@ -252,6 +279,15 @@ export class ExploreScene extends Scene {
       this.say(it.name, it.desc);
     });
     $('.room-card').addEventListener('click', e => this.onCardClick(e));
+    $('.room-card').addEventListener('keydown', e => {
+      const tab = e.target.closest('[role="tab"]');
+      const step = { ArrowRight: 1, ArrowLeft: -1, Home: -Infinity, End: Infinity }[e.key];
+      if (!tab || !step) return;
+      e.preventDefault();
+      const ids = JOURNAL_TABS.map(([id]) => id);
+      const i = Math.max(0, Math.min(ids.length - 1, ids.indexOf(tab.dataset.tab) + step));
+      this.showCarnet(ids[i], { focusTab: true });
+    });
     $('.room-card').addEventListener('input', e => {
       const r = e.target.closest('[data-volume]');
       if (!r) return;
@@ -283,9 +319,11 @@ export class ExploreScene extends Scene {
     for (const o of this.objects) {
       const snd = o.states?.[this.objectState(o.id)]?.sound;
       if (snd) this.playStateSound(o.id, this.objectState(o.id), snd);
+      this.cycleFrames(o.id);
     }
 
     this.announce([d.title, d.background?.alt, this.objectiveText()].filter(Boolean).join('. '));
+    this.later(() => this.peekObjective(), 1600);
     this.run(d.onEnter);
   }
 
@@ -320,11 +358,13 @@ export class ExploreScene extends Scene {
     if (e.target.closest('.room-ui')) {
       this.setHot(null);
       const s = e.target.closest('.room-slot.full');
+      const tool = e.target.closest('[data-tip]');
       if (s) this.placeTip(this.item(s.dataset.item).name, cx, cy);
+      else if (tool && !tool.classList.contains('open')) this.placeTip(tool.dataset.tip, cx, cy);
       else this.tip.classList.remove('on');
       return;
     }
-    const id = this.hit(px, py);
+    const id = this.isBusy ? null : this.hit(px, py);
     this.setHot(id);
     if (id) this.placeTip(this.defs.get(id).name, cx, cy);
     else this.tip.classList.remove('on');
@@ -375,9 +415,23 @@ export class ExploreScene extends Scene {
 
   // ---- Interaction ----
 
+  // Occupée aussi tant qu'un personnage parle, même si la suite d'actions est déjà finie.
+  get isBusy() {
+    return super.isBusy || !!this.speaking;
+  }
+
+  busyChanged() {
+    const busy = this.isBusy;
+    this.frame?.classList.toggle('busy', busy);
+    if (busy) {
+      this.setHot(null);
+      this.tip?.classList.remove('on');
+    }
+  }
+
   use(id) {
     const def = this.defs.get(id);
-    if (!def || this.isHidden(id) || this.overlay.isOpen) return;
+    if (!def || this.isHidden(id) || this.overlay.isOpen || this.isBusy) return;
     const actions = def.onUse ?? (def.description ? [{ do: 'sfx', name: 'soft' }, { do: 'say', text: def.description }] : []);
     this.run(actions, { object: def });
   }
@@ -394,6 +448,7 @@ export class ExploreScene extends Scene {
     delete this.sounds[id];
     const snd = def.states?.[state]?.sound;
     if (snd) this.playStateSound(id, state, snd);
+    this.cycleFrames(id);
     this.decorEls.forEach(x => {
       if (x.def.preset === 'crt-on' && x.refs.has(id) && test(x.def.when, { game: this.game, scene: this })) {
         x.el.classList.remove('go');
@@ -401,6 +456,23 @@ export class ExploreScene extends Scene {
         x.el.classList.add('go');
       }
     });
+  }
+
+  // État avec frames : les images alternent toutes les interval ms (2500 par défaut) tant que l'état dure.
+  cycleFrames(id) {
+    clearTimeout(this.frameTimers[id]);
+    delete this.frameTimers[id];
+    const st = this.defs.get(id)?.states?.[this.objectState(id)];
+    const frames = st?.frames || [];
+    const el = this.els[id];
+    if (frames.length < 2 || el?.tagName !== 'IMG' || this.reduceMotion) return;
+    let i = 0;
+    const step = () => {
+      i = (i + 1) % frames.length;
+      el.src = this.url(frames[i]);
+      this.frameTimers[id] = this.later(step, st.interval ?? 2500);
+    };
+    this.frameTimers[id] = this.later(step, st.interval ?? 2500);
   }
 
   playStateSound(id, state, snd) {
@@ -641,6 +713,7 @@ export class ExploreScene extends Scene {
     const obj = a.character ? this.objects.find(o => o.character === a.character) : null;
     const talk = this.el.querySelector('.room-talk');
     this.speaking = { handle, objectId: obj?.id };
+    this.busyChanged();
     if (obj?.bubble) {
       const [x, y] = this.rectOf(obj);
       talk.style.left = this.pct(obj.bubble[0] + x - obj.rect[0], this.W);
@@ -653,7 +726,10 @@ export class ExploreScene extends Scene {
     const hold = legend ? this.showLegend(who, legend, { hold: true }) : 0;
     handle.onEnd = () => {
       talk.classList.remove('on');
-      if (this.speaking?.handle === handle) this.speaking = null;
+      if (this.speaking?.handle === handle) {
+        this.speaking = null;
+        if (!this.disposed) this.busyChanged();
+      }
       if (hold && this.legendToken === hold) this.el.querySelector('.room-sub')?.classList.remove('on');
       ended();
     };
@@ -668,9 +744,9 @@ export class ExploreScene extends Scene {
   }
 
   objectiveText() {
-    const id = this.game.state.data.objective;
+    const st = this.game.state.data, id = st.objective;
     if (!id) return '';
-    return `Objectif : ${lcfirst(this.data.objectives?.[id] ?? id)}`;
+    return `Objectif : ${lcfirst(this.data.objectives?.[id] ?? st.journal.objectives[id]?.label ?? id)}`;
   }
 
   onStateChange(ev) {
@@ -684,12 +760,48 @@ export class ExploreScene extends Scene {
     this.decorEls.forEach(x => { if (x.def.when) x.el.classList.toggle('on', test(x.def.when, ctx)); });
   }
 
+  // Tiroir d'inventaire (icône du sac). peek : ouverture brève à la prise d'un objet.
+  toggleInventory(open = !this.invOpen, { peek = false } = {}) {
+    clearTimeout(this.invPeekT);
+    this.invOpen = open;
+    this.invPeeking = open && peek;
+    const inv = this.el.querySelector('.room-inv');
+    inv.classList.toggle('open', open);
+    this.frame.classList.toggle('inv-open', open);
+    inv.querySelector('.room-inv-btn').setAttribute('aria-expanded', String(open));
+    if (this.invPeeking) this.invPeekT = this.later(() => this.toggleInventory(false), 3200);
+  }
+
+  // Objectif replié en une cible ; un clic le déplie, et il se montre seul quelques secondes quand il change.
+  toggleObjective(open = !this.objOpen) {
+    clearTimeout(this.objPeekT);
+    this.objOpen = open;
+    const b = this.el.querySelector('.room-objective');
+    b.classList.toggle('open', open);
+    b.setAttribute('aria-expanded', String(open));
+    if (open) this.tip.classList.remove('on');
+  }
+
+  peekObjective(ms = 6000) {
+    if (!this.objectiveText() || this.objOpen) return;
+    this.toggleObjective(true);
+    this.objPeekT = this.later(() => this.toggleObjective(false), ms);
+  }
+
   refreshHud(ev = {}) {
     const st = this.game.state.data;
     const obj = this.el.querySelector('.room-objective');
     const text = this.objectiveText();
     obj.hidden = !text;
+    obj.setAttribute('aria-label', text || 'Objectif');
     obj.querySelector('.room-objective-t').textContent = text;
+    if (ev.kind === 'objective' && text) {
+      obj.classList.remove('new');
+      void obj.offsetWidth;
+      obj.classList.add('new');
+      this.peekObjective();
+    }
+    if (ev.kind === 'inventory' && ev.added && (!this.invOpen || this.invPeeking)) this.toggleInventory(true, { peek: true });
 
     this.el.querySelectorAll('.room-slot').forEach((s, i) => {
       const id = st.inventory[i];
@@ -714,12 +826,33 @@ export class ExploreScene extends Scene {
       if (ev.kind === 'inventory' && ev.added === id) { void s.offsetWidth; s.classList.add('new'); }
     });
 
-    const badge = this.el.querySelector('.room-badge');
-    const unseen = st.notes.length > this.notesSeen;
-    badge.textContent = st.notes.length;
-    badge.classList.toggle('on', unseen);
-    this.el.querySelector('.room-carnet').setAttribute('aria-label', unseen ? `Carnet, ${st.notes.length - this.notesSeen} nouvelle(s) note(s)` : 'Carnet');
-    if (ev.kind === 'notes') this.announce(`Nouvelle note dans le carnet : ${ev.added}`);
+    const badge = this.el.querySelector('.room-carnet .room-badge');
+    const unseen = Object.values(this.journalUnseen()).reduce((a, b) => a + b, 0);
+    badge.textContent = unseen;
+    badge.classList.toggle('on', unseen > 0);
+    this.el.querySelector('.room-carnet').setAttribute('aria-label', unseen ? `Carnet, ${unseen} nouveauté(s)` : 'Carnet');
+    if (ev.kind === 'notes') this.announce(`Nouvel indice dans le carnet : ${ev.added}`);
+    if (ev.kind === 'journal' && ev.section === 'people') {
+      const name = this.character(ev.person)?.name || ev.person;
+      this.announce(ev.fact ? `Carnet, ${name} : ${ev.fact}` : `Nouveau personnage dans le carnet : ${name}`);
+    }
+    if (ev.kind === 'journal' && ev.section === 'memories') this.announce(`Nouveau souvenir dans le carnet : ${ev.title}`);
+  }
+
+  // ---- Carnet ----
+
+  journalCounts() {
+    const st = this.game.state.data, people = Object.values(st.journal.people);
+    return {
+      indices: st.notes.length,
+      personnes: people.length + people.reduce((n, p) => n + p.facts.length, 0),
+      souvenirs: st.journal.memories.length,
+    };
+  }
+
+  journalUnseen() {
+    const counts = this.journalCounts(), seen = this.game.state.data.journal.seen;
+    return Object.fromEntries(Object.entries(counts).map(([k, n]) => [k, Math.max(0, n - (seen[k] ?? 0))]));
   }
 
   // ---- Fenêtres ----
@@ -728,8 +861,21 @@ export class ExploreScene extends Scene {
     if (e.target.closest('[data-close]')) { this.overlay.close(); return; }
     const pause = e.target.closest('[data-pause]');
     if (pause) { this.pauseAction(pause.dataset.pause); return; }
+    const tab = e.target.closest('[data-tab]');
+    if (tab && this.carnetOpen) {
+      this.game.audio.ui('soft');
+      this.showCarnet(tab.dataset.tab, { focusTab: tab.getAttribute('role') === 'tab' });
+      return;
+    }
+    const mem = e.target.closest('[data-memory]');
+    if (mem && this.carnetOpen) {
+      this.game.audio.ui('soft');
+      this.showCarnet('souvenirs', { memory: +mem.dataset.memory });
+      this.el.querySelector('.room-memory-full .room-btn')?.focus();
+      return;
+    }
     const btn = e.target.closest('[data-action]');
-    if (!btn || !this.openPanelId) return;
+    if (!btn || !this.openPanelId || this.isBusy) return;
     const action = this.visiblePanelActions()[+btn.dataset.action];
     if (!action) return;
     const panelId = this.openPanelId;
@@ -787,25 +933,116 @@ export class ExploreScene extends Scene {
     this.overlay.close();
   }
 
-  showCarnet() {
+  // Carnet à onglets. memory : index d'un souvenir à afficher en grand dans l'onglet Souvenirs.
+  showCarnet(tab = this.carnetTab || 'objectifs', { memory = null, focusTab = false } = {}) {
     const st = this.game.state.data;
-    this.notesSeen = st.notes.length;
+    const unseen = this.journalUnseen();
+    const seenBefore = { ...st.journal.seen };
+    this.carnetTab = tab;
+    if (tab in unseen) {
+      st.journal.seen[tab] = this.journalCounts()[tab];
+      this.game.autosave();
+    }
+    const body = {
+      objectifs: () => this.carnetObjectives(),
+      indices: () => this.carnetNotes(seenBefore.indices ?? 0),
+      personnes: () => this.carnetPeople(),
+      souvenirs: () => memory != null ? this.carnetMemory(memory) : this.carnetMemories(seenBefore.souvenirs ?? 0),
+    }[tab]();
+    const tabs = JOURNAL_TABS.map(([id, label]) => {
+      const n = id === tab ? 0 : unseen[id] || 0;
+      return `<button type="button" role="tab" class="room-tab" id="room-tab-${id}" data-tab="${id}" aria-selected="${id === tab}" aria-controls="room-tabpanel" tabindex="${id === tab ? 0 : -1}">${label}${n ? `<span class="room-tab-dot" aria-label="${n} nouveauté(s)">${n}</span>` : ''}</button>`;
+    }).join('');
+    const html = `<div class="room-info room-journal">
+      <div class="k">Carnet</div>
+      <div class="room-tabs" role="tablist" aria-label="Rubriques du carnet">${tabs}</div>
+      <div class="room-tabpanel" id="room-tabpanel" role="tabpanel" aria-labelledby="room-tab-${tab}">${body}</div>
+    </div>`;
+    if (this.carnetOpen && this.overlay.isOpen) this.overlay.refresh(html);
+    else {
+      this.openPanelId = null;
+      this.overlay.open(html, { single: true, label: 'Carnet', cls: 'room-card--journal' });
+      this.carnetOpen = true;
+      this.overlay.onClose = () => { this.carnetOpen = false; };
+    }
+    if (focusTab) this.el.querySelector(`#room-tab-${tab}`)?.focus();
     this.refreshHud();
-    const objectives = Object.entries(this.data.objectives || {})
-      .filter(([id]) => st.done.includes(id) || st.objective === id)
-      .map(([id, label]) => st.done.includes(id)
-        ? `<li class="done"><span class="sr-only">Terminé : </span>${esc(label)}</li>`
-        : `<li class="cur"><span class="sr-only">En cours : </span>${esc(label)}</li>`)
-      .join('') || '<li class="muted">Aucun objectif pour le moment.</li>';
-    const notes = st.notes.length
-      ? st.notes.map(n => `<li>${esc(n)}</li>`).join('')
-      : '<li class="muted">Aucune note pour le moment. Examinez les lieux.</li>';
+  }
+
+  // Regroupe des entrées { place } par lieu, dans l'ordre d'apparition.
+  byPlace(entries, row) {
+    const groups = new Map();
+    entries.forEach((e, i) => {
+      const k = e.place || '';
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(row(e, i));
+    });
+    return [...groups].map(([place, rows]) => `${place ? `<div class="room-journal-place">${esc(place)}</div>` : ''}<ul class="room-list">${rows.join('')}</ul>`).join('');
+  }
+
+  carnetObjectives() {
+    const st = this.game.state.data, log = { ...st.journal.objectives };
+    for (const id of [...st.done, st.objective].filter(Boolean)) {
+      log[id] ??= { label: this.data.objectives?.[id] ?? id, place: this.data.title };
+    }
+    const cur = st.objective && log[st.objective];
+    const done = st.done.filter(id => log[id]).map(id => log[id]);
+    return `<div class="room-journal-h">En cours</div>
+      <ul class="room-list">${cur ? `<li class="cur"><span class="sr-only">En cours : </span>${esc(cur.label)}</li>` : '<li class="muted">Aucun objectif en cours.</li>'}</ul>
+      ${done.length ? `<div class="room-journal-h">Accomplis</div>${this.byPlace(done, o => `<li class="done"><span class="sr-only">Terminé : </span>${esc(o.label)}</li>`)}` : ''}`;
+  }
+
+  carnetNotes(seen) {
+    const notes = this.game.state.data.notes.map(n => typeof n === 'string' ? { text: n } : n);
+    if (!notes.length) return '<p class="room-journal-empty">Aucun indice pour le moment. Examinez les lieux.</p>';
+    return this.byPlace(notes, (n, i) => `<li${i >= seen ? ' class="new"' : ''}>${esc(n.text)}</li>`);
+  }
+
+  carnetPeople() {
+    const people = Object.entries(this.game.state.data.journal.people);
+    if (!people.length) return '<p class="room-journal-empty">Personne pour le moment.</p>';
+    return `<ul class="room-people">${people.map(([id, p]) => {
+      const c = this.character(id);
+      const pic = c?.portrait || c?.sprites?.idle;
+      return `<li class="room-person">
+        <div class="room-person-pic">${pic ? `<img src="${esc(this.characterUrl(id, pic))}" alt="">` : ''}</div>
+        <div class="room-person-txt">
+          <div class="room-person-name">${esc(c?.name || id)}</div>
+          ${c?.role ? `<div class="room-person-role">${esc(c.role)}</div>` : ''}
+          ${p.facts.length ? `<ul class="room-list">${p.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : '<p class="room-journal-empty">Rien de plus pour l\'instant.</p>'}
+        </div>
+      </li>`;
+    }).join('')}</ul>`;
+  }
+
+  carnetMemories(seen) {
+    const list = this.game.state.data.journal.memories;
+    if (!list.length) return '<p class="room-journal-empty">Aucun souvenir pour le moment.</p>';
+    return `<ul class="room-memories">${list.map((m, i) => `<li><button type="button" class="room-memory${i >= seen ? ' new' : ''}" data-memory="${i}">
+      <span class="room-memory-pic">${m.src ? `<img src="${esc(resolve(m.src, ROOT))}" alt="">` : ''}</span>
+      <span class="room-memory-t">${esc(m.title || '')}</span>
+    </button></li>`).join('')}</ul>`;
+  }
+
+  carnetMemory(i) {
+    const m = this.game.state.data.journal.memories[i];
+    if (!m) return this.carnetMemories(Infinity);
+    return `<div class="room-memory-full">
+      ${m.src ? `<img src="${esc(resolve(m.src, ROOT))}" alt="">` : ''}
+      <h3>${esc(m.title || '')}</h3>
+      ${m.place ? `<div class="room-journal-place">${esc(m.place)}</div>` : ''}
+      ${m.text ? `<p>${esc(m.text)}</p>` : ''}
+      <div class="room-acts"><button type="button" class="room-btn ghost" data-tab="souvenirs">Retour aux souvenirs</button></div>
+    </div>`;
+  }
+
+  showMap() {
     this.openPanelId = null;
     this.overlay.open(`<div class="room-info">
-      <div class="k">Carnet</div><h3>${esc(this.data.title)}</h3><div class="room-orn"><b></b><i></i><b></b></div>
-      <div class="k">Objectifs</div><ul class="room-list">${objectives}</ul>
-      <div class="k">Notes</div><ul class="room-list">${notes}</ul>
-    </div>`, { single: true, label: 'Carnet' });
+      <div class="k">Carte</div><h3>${esc(this.data.title)}</h3><div class="room-orn"><b></b><i></i><b></b></div>
+      <p>La carte des Weppes se dévoilera au fil de l'aventure.</p>
+      <div class="room-acts"><button type="button" class="room-btn" data-close>Fermer</button></div>
+    </div>`, { single: true, label: 'Carte' });
   }
 
   showHelp() {
@@ -815,6 +1052,23 @@ export class ExploreScene extends Scene {
       <ul class="room-list">${HELP.map(h => `<li>${esc(h)}</li>`).join('')}</ul>
       <div class="room-acts"><button type="button" class="room-btn" data-close>Compris</button></div>
     </div>`, { single: true, label: 'Aide' });
+  }
+
+  // popup { kicker?, title, text: texte ou liste de paragraphes, button? } : attend la fermeture.
+  popup(a) {
+    const paras = (Array.isArray(a.text) ? a.text : [a.text]).filter(Boolean);
+    this.openPanelId = null;
+    this.hideSay();
+    this.tip.classList.remove('on');
+    return new Promise(res => {
+      this.overlay.onClose = () => { this.overlay.onClose = null; res(); };
+      this.overlay.open(`<div class="room-info">
+        ${a.kicker ? `<div class="k">${esc(a.kicker)}</div>` : ''}<h3>${esc(a.title)}</h3><div class="room-orn"><b></b><i></i><b></b></div>
+        ${paras.map(p => `<p>${esc(p)}</p>`).join('')}
+        <div class="room-acts"><button type="button" class="room-btn" data-close>${esc(a.button || 'Continuer')}</button></div>
+      </div>`, { single: true, label: a.title || '' });
+      this.announce([a.title, ...paras].filter(Boolean).join('. '));
+    });
   }
 
   showPause() {

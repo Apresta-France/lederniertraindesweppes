@@ -21,6 +21,8 @@ function shortLabel(item) {
     case 'music': return item.src ? `♪ ${fileName(item.src)}` : `♪ vol. ${num(item.volume, 1)}`;
     case 'rain': return `pluie ${'level' in item ? item.level : '·'}/${'sound' in item ? item.sound : '·'}`;
     case 'ambience': return `${item.kind || 'ambiance'} ${num(item.level)}`;
+    case 'sfx': return `♫ ${fileName(item.src) || item.name || 'bruitage'}`;
+    case 'voice': return `« ${item.subtitle || fileName(item.src) || 'réplique'} »`;
     case 'fx': return `${item.name || 'fx'} ${item.on === false ? 'off' : 'on'}`;
     case 'clear': return 'clear';
     case 'fadeLayers': return 'fondu';

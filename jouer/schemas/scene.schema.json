@@ -74,7 +74,7 @@
       "required": ["at", "do"],
       "properties": {
         "at": { "type": "integer", "minimum": 0, "description": "Instant en millisecondes depuis le début de la scène." },
-        "do": { "enum": ["card", "shot", "caption", "music", "rain", "ambience", "clear", "fadeLayers", "logo", "fx", "clockTicks", "marker", "end"] }
+        "do": { "enum": ["card", "shot", "caption", "music", "voice", "rain", "ambience", "sfx", "clear", "fadeLayers", "logo", "fx", "clockTicks", "marker", "end"] }
       },
       "allOf": [
         { "if": { "properties": { "do": { "const": "card" } } }, "then": { "properties": {
@@ -97,6 +97,35 @@
           "from": { "$ref": "#/$defs/kenburns" },
           "to": { "$ref": "#/$defs/kenburns" },
           "ease": { "type": "string" },
+          "roll": { "type": "array", "items": { "type": "number" }, "minItems": 1, "maxItems": 2, "description": "Roulis de la caméra en degrés [début, fin]. Prévoir une échelle d'au moins 1 + 0,03 × degré." },
+          "transition": { "enum": ["fade", "whip-left", "whip-right"], "description": "Entrée du plan : fondu (défaut) ou panoramique filé vers la gauche / la droite, sur la durée de fade." },
+          "drive": { "type": "number", "description": "Caméra embarquée : trépidation de la route, amplitude en pixels." },
+          "lamps": {
+            "description": "Lampadaires qui défilent : bandes de lumière qui traversent l'image.",
+            "oneOf": [
+              { "type": "number", "description": "Période en ms." },
+              { "type": "object", "properties": { "interval": { "type": "number" }, "dir": { "enum": ["left", "right"] }, "level": { "type": "number" }, "color": { "type": "string" } }, "additionalProperties": false }
+            ]
+          },
+          "glows": {
+            "type": "array",
+            "description": "Lumières (phares, feux, clignotant) en % de l'image ; elles suivent le cadre.",
+            "items": {
+              "type": "object",
+              "required": ["x", "y"],
+              "properties": {
+                "x": { "type": "number" },
+                "y": { "type": "number" },
+                "size": { "type": "number", "description": "Diamètre en % de la largeur de l'image (6 par défaut)." },
+                "color": { "type": "string" },
+                "opacity": { "oneOf": [{ "type": "number" }, { "type": "array", "items": { "type": "number" }, "minItems": 1 }], "description": "Intensité constante, ou valeurs réparties sur la durée du plan." },
+                "grow": { "type": "number", "description": "Facteur d'agrandissement à la fin du plan (phares qui approchent)." },
+                "blink": { "type": "number", "description": "Clignotement : période complète en ms." },
+                "delay": { "type": "number" }
+              },
+              "additionalProperties": false
+            }
+          },
           "dark": { "type": "boolean" },
           "shake": { "type": "number", "description": "Amplitude de secousse en pixels (atténuée si l'option « Réduire les effets » est active)." },
           "flashes": { "type": "array", "items": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 }, "description": "[[délai ms, intensité], …] éclairs + tonnerre." },
@@ -110,13 +139,28 @@
         { "if": { "properties": { "do": { "const": "music" } } }, "then": { "properties": {
           "src": { "type": "string", "description": "Absent : ne change que le volume de la piste en cours." },
           "volume": { "type": "number", "description": "0 à 1, relatif au réglage Musique du joueur." },
-          "fade": { "type": "integer" }, "loop": { "type": "boolean" }
+          "fade": { "type": "integer" }, "loop": { "type": "boolean" },
+          "sync": { "type": "boolean", "description": "L'horloge de la scène suit la piste : les plans restent calés sur la musique malgré la latence de chargement." },
+          "offset": { "type": "integer", "description": "Démarre la piste à cet instant du fichier (ms)." }
+        } } },
+        { "if": { "properties": { "do": { "const": "voice" } } }, "then": { "required": ["src"], "properties": {
+          "src": { "type": "string" },
+          "character": { "type": "string", "description": "Personnage (shared/characters/<id>) : son nom s'affiche au-dessus du sous-titre." },
+          "subtitle": { "type": "string", "description": "Sous-titre affiché le temps de la réplique. Absent : sounds[src].caption." }
         } } },
         { "if": { "properties": { "do": { "const": "rain" } } }, "then": { "properties": {
           "level": { "type": "number", "description": "Pluie visible." }, "sound": { "type": "number", "description": "Volume du bruit de pluie." }
         } } },
         { "if": { "properties": { "do": { "const": "ambience" } } }, "then": { "properties": {
-          "kind": { "enum": ["wind"] }, "level": { "type": "number" }
+          "kind": { "enum": ["wind", "road"], "description": "wind : vent. road : roulement d'une voiture sur route mouillée." }, "level": { "type": "number" }
+        } } },
+        { "if": { "properties": { "do": { "const": "sfx" } } }, "then": { "anyOf": [{ "required": ["name"] }, { "required": ["src"] }], "properties": {
+          "name": { "enum": ["thunder", "rumble", "passby", "wipers", "indicator", "doorOpen", "doorClose", "footsteps"], "description": "Son synthétisé." },
+          "src": { "type": "string", "description": "Fichier audio (prioritaire sur name), par exemple @shared/audio/sfx/voiture_passe_04.mp3." },
+          "level": { "type": "number", "description": "Intensité (1 par défaut)." },
+          "pan": { "type": "number", "description": "passby : la voiture passe de -pan (gauche) à +pan (droite). Fichier : décalage stéréo fixe." },
+          "count": { "type": "integer", "description": "wipers : allers-retours. indicator : clics. footsteps : foulées." },
+          "interval": { "type": "integer", "description": "wipers : durée d'un aller-retour. indicator, footsteps : écart entre deux clics ou deux foulées (ms)." }
         } } },
         { "if": { "properties": { "do": { "const": "fadeLayers" } } }, "then": { "properties": { "duration": { "type": "integer" } } } },
         { "if": { "properties": { "do": { "const": "logo" } } }, "then": { "properties": {
@@ -173,6 +217,8 @@
             "type": "object",
             "properties": {
               "sprite": { "type": "string" },
+              "frames": { "type": "array", "items": { "type": "string" }, "description": "Images qui alternent tant que l'objet est dans cet état (la première remplace sprite s'il est absent)." },
+              "interval": { "type": "number", "description": "Durée d'affichage de chaque image de frames, en ms (2500 par défaut)." },
               "sound": { "type": "object", "properties": { "src": { "type": "string" }, "loop": { "type": "boolean" }, "onEnded": { "$ref": "#/$defs/actions" } } }
             }
           }
@@ -201,8 +247,8 @@
       "required": ["do"],
       "properties": {
         "do": {
-          "enum": ["say", "sfx", "voice", "animate", "setState", "cycleState", "set", "inc", "take", "give", "remove", "hide", "show", "note", "objective", "examine", "panelNote", "close", "goto", "wait", "if", "menu"],
-          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src, duration?} · voice {character?, src | pool+pick, subtitle?, wait?} · animate {object, animation?, to?: [x, y], duration? | speed?, flip?, hold?, keep?, wait?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · objective {set?, complete?, once?} · examine {panel} · panelNote {text} · close · goto {scene} · wait {ms} · if {cond, then[], else[]} · menu"
+          "enum": ["say", "sfx", "voice", "animate", "setState", "cycleState", "set", "inc", "take", "give", "remove", "hide", "show", "note", "person", "memory", "objective", "examine", "popup", "panelNote", "close", "goto", "fadeOut", "wait", "if", "menu"],
+          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src, duration?} · voice {character?, src | pool+pick, subtitle?, wait?} · animate {object, animation?, to?: [x, y], duration? | speed?, flip?, hold?, keep?, wait?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · person {character, text?} · memory {id, title, image?, text?} · objective {set?, complete?, once?} · examine {panel} · popup {kicker?, title, text | text[], button?} · panelNote {text} · close · goto {scene} · fadeOut {ms?, music?} · wait {ms} · if {cond, then[], else[]} · menu"
         }
       }
     },

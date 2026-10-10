@@ -41,6 +41,7 @@ export function collectImageUsages(scene) {
     if (!isObj(object.states)) return;
     for (const [stateName, state] of Object.entries(object.states)) {
       addUsage(map, state?.sprite, `${name} · état « ${stateName} »`, selection);
+      (Array.isArray(state?.frames) ? state.frames : []).forEach((f) => addUsage(map, f, `${name} · état « ${stateName} »`, selection));
     }
   });
 

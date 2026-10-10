@@ -1,0 +1,71 @@
+{
+  "id": "aurelie-voiture",
+  "type": "cinematic",
+  "title": "Aurélie arrive en voiture",
+  "meta": {
+    "act": "Acte 1",
+    "chapter": "Chapitre I",
+    "notes": "Musique « sur la route » lue à partir de 37,380 s (offset) : 129 bpm, phrases de 16 temps = 7,442 s. Dans la frise, les temps forts tombent à k × 7,442 s : 0 · 7,4 · 14,9 · 22,3 (entrée de la section pleine) · 29,8 · 37,2 ; demi-phrases à + 3,721 s. Les coupes sont posées sur ces temps. Répliques : 1 à 3 pendant le trajet, 4 en entrant dans la résidence (la place libre), 5 à la sortie de la voiture."
+  },
+  "chrome": { "letterbox": true, "vignette": 0.6, "rainCanvas": true, "background": "#05070c" },
+  "skip": { "mode": "end", "label": "Cliquer pour continuer" },
+  "timeline": [
+    { "at": 0, "do": "music", "src": "assets/sur_la_route.mp3", "volume": 1, "fade": 1500, "loop": false, "sync": true, "offset": 37380 },
+    { "at": 0, "do": "rain", "level": 0.55, "sound": 0.13 },
+    { "at": 0, "do": "ambience", "kind": "wind", "level": 0.2 },
+    { "at": 0, "do": "ambience", "kind": "road", "level": 0.2 },
+    { "at": 0, "do": "sfx", "src": "@shared/audio/sfx/voiture_passe_05.mp3", "level": 1, "pan": 0.2 },
+    { "at": 0, "do": "shot", "src": "assets/v01_champs.png", "duration": 3721, "fade": 1200, "from": [1.14, 0, 6], "to": [1.14, -2, -3], "ease": "ease-in-out", "rain": 0.55, "flashes": [[1800, 0.4]], "description": "Crépuscule pluvieux sur les champs des Weppes. Au loin, les phares d'une voiture longent la lisière du bois." },
+
+    { "at": 3421, "do": "shot", "src": "assets/v02_departementale.png", "duration": 4021, "fade": 600, "from": [1.12, 5, 0], "to": [1.12, -5, -1], "ease": "cubic-bezier(.4,0,.7,1)", "glows": [{ "x": 66, "y": 54.7, "size": 8.8, "opacity": [0.3, 0.85], "grow": 1.7 }, { "x": 73.4, "y": 54.7, "size": 8.8, "opacity": [0.3, 0.85], "grow": 1.7 }], "description": "Sur la départementale détrempée, une petite Renault 5 bleu-gris roule vers nous." },
+
+    { "at": 4400, "do": "voice", "src": "assets/aurelie_01.mp3", "character": "aurelie", "subtitle": "Oh là là, quelle pluie ce soir ! On va essayer de rester concentrée et de ne pas avoir d'accident." },
+    { "at": 7116, "do": "sfx", "src": "@shared/audio/sfx/voiture_passe_06.mp3", "level": 0.6, "pan": -0.2 },
+
+    { "at": 7442, "do": "rain", "sound": 0.07 },
+    { "at": 7442, "do": "ambience", "kind": "road", "level": 0.6 },
+    { "at": 7442, "do": "ambience", "kind": "wind", "level": 0.05 },
+    { "at": 7442, "do": "shot", "src": "assets/v04_habitacle.png", "duration": 3721, "fade": 400, "from": [1.08, 0, 0], "to": [1.08, 0.5, 0.5], "roll": [0.4, -1.4], "ease": "ease-in-out", "drive": 1.6, "lamps": { "interval": 1860, "dir": "right", "level": 0.24 }, "rain": 0.1, "description": "Dans l'habitacle, Aurélie tient le volant. Devant elle, un rond-point luit sous les lampadaires." },
+    { "at": 7442, "do": "sfx", "name": "wipers", "level": 0.6, "count": 2, "interval": 1858 },
+    { "at": 8373, "do": "sfx", "name": "indicator", "level": 0.8, "count": 6, "interval": 465 },
+    { "at": 11000, "do": "voice", "src": "assets/aurelie_02.mp3", "character": "aurelie", "subtitle": "J'espère que grand-mère a réussi à s'occuper un peu aujourd'hui. La dernière fois que je suis venue la voir, elle a passé la journée dans son fauteuil." },
+
+    { "at": 11163, "do": "shot", "src": "assets/v05_rond_point.png", "duration": 3721, "fade": 350, "transition": "whip-left", "from": [1.12, 5, 1], "to": [1.12, -4, 0], "ease": "cubic-bezier(.2,.6,.4,1)", "glows": [{ "x": 20.3, "y": 52, "size": 11.2, "color": "#ff2a1a", "opacity": [0.9, 0.7, 0.15, 0] }, { "x": 33, "y": 52, "size": 11.2, "color": "#ff2a1a", "opacity": [0.9, 0.7, 0.15, 0] }, { "x": 27.3, "y": 45, "size": 7.5, "color": "#ff2a1a", "opacity": [0.8, 0.6, 0.1, 0] }], "rain": 0.6, "description": "La Renault 5 s'engage dans le rond-point. Un panneau indique Fournes-en-Weppes et la Résidence Les Charmilles." },
+    { "at": 11163, "do": "rain", "sound": 0.16 },
+    { "at": 11163, "do": "ambience", "kind": "road", "level": 0.3 },
+    { "at": 11163, "do": "ambience", "kind": "wind", "level": 0.22 },
+    { "at": 11916, "do": "sfx", "src": "@shared/audio/sfx/voiture_passe_07.mp3", "level": 0.8 },
+
+    { "at": 14884, "do": "shot", "src": "assets/v06_panneau_m7.png", "duration": 1860, "fade": 300, "transition": "whip-left", "from": [1.14, 6, 0], "to": [1.14, -4, 0], "ease": "linear", "drive": 1.2, "flashes": [[0, 0.5]], "description": "Panneau de la M7 : Herlies, et Fournes-en-Weppes centre." },
+    { "at": 14884, "do": "ambience", "kind": "road", "level": 0.15 },
+    { "at": 16744, "do": "shot", "src": "assets/v07_abribus.png", "duration": 1861, "fade": 300, "from": [1.05, 0, 0], "to": [1.05, -0.5, 0], "glows": [{ "x": 72.8, "y": 49.7, "size": 7.5, "color": "#ff2a1a", "opacity": [0.7, 0.4] }, { "x": 80.2, "y": 49.7, "size": 7.5, "color": "#ff2a1a", "opacity": [0.7, 0.4] }], "description": "Abribus désert. La voiture quitte le rond-point en soulevant des gerbes d'eau." },
+    { "at": 16744, "do": "ambience", "kind": "road", "level": 0.3 },
+    { "at": 17616, "do": "sfx", "src": "@shared/audio/sfx/voiture_passe_04.mp3", "level": 1 },
+
+    { "at": 18600, "do": "voice", "src": "assets/aurelie_03.mp3", "character": "aurelie", "subtitle": "Allez, encore quelques virages et on est bientôt arrivée… C'est fou quand même, ce temps. Je ne m'attendais pas à autant de pluie ce soir." },
+    { "at": 18605, "do": "shot", "src": "assets/v08_entree_fournes.png", "duration": 3721, "fade": 300, "from": [1.14, -6, 0], "to": [1.14, 6, 0], "ease": "ease-in-out", "glows": [{ "x": 27, "y": 51.4, "size": 8.8, "color": "#ff2a1a", "opacity": [0.2, 0.2, 0.85, 0.3] }, { "x": 40.7, "y": 51.4, "size": 8.8, "color": "#ff2a1a", "opacity": [0.2, 0.2, 0.85, 0.3] }, { "x": 34.3, "y": 44.3, "size": 6.2, "color": "#ff2a1a", "opacity": [0, 0, 0.8, 0.2] }], "description": "Entrée de Fournes-en-Weppes. La Renault 5 file vers le centre du village." },
+    { "at": 20416, "do": "sfx", "src": "@shared/audio/sfx/voiture_passe_02.mp3", "level": 0.45, "pan": 0.3 },
+
+    { "at": 22326, "do": "shot", "src": "assets/v09_avenue.png", "duration": 3721, "fade": 250, "from": [1.02, 0, 0], "to": [1.16, -2, -2], "glows": [{ "x": 56.4, "y": 62.7, "size": 10, "opacity": [0.35, 1], "grow": 1.9 }, { "x": 68.7, "y": 62.3, "size": 10, "opacity": [0.35, 1], "grow": 1.9 }], "flashes": [[0, 0.8]], "description": "Sur l'avenue bordée d'arbres, la voiture approche, phares allumés." },
+
+    { "at": 26047, "do": "shot", "src": "assets/v11_portail.png", "duration": 3721, "fade": 300, "from": [1.12, -5, 0], "to": [1.12, 3, 0], "ease": "ease-in-out", "glows": [{ "x": 58.7, "y": 57.5, "size": 7.5, "opacity": 0.55 }, { "x": 72, "y": 58, "size": 7.5, "opacity": 0.55 }, { "x": 57.4, "y": 58, "size": 8, "color": "#ff9d1a", "blink": 930 }], "description": "Devant le portail de la Résidence Les Charmilles, un EHPAD. La voiture ralentit, clignotant allumé." },
+    { "at": 26047, "do": "sfx", "name": "indicator", "level": 0.6, "count": 8, "interval": 465 },
+
+    { "at": 29768, "do": "shot", "src": "assets/v12_allee.png", "duration": 3721, "fade": 300, "from": [1.12, 4, -5], "to": [1.12, 5, 4], "ease": "ease-in-out", "glows": [{ "x": 30.8, "y": 52, "size": 7.5, "color": "#ff2a1a", "opacity": [0.3, 0.9, 0.5] }, { "x": 39.3, "y": 51.6, "size": 7.5, "color": "#ff2a1a", "opacity": [0.3, 0.9, 0.5] }], "description": "La Renault 5 franchit le portail et entre sur le parking de la résidence." },
+    { "at": 29768, "do": "ambience", "kind": "road", "level": 0.15 },
+    { "at": 30416, "do": "voice", "src": "assets/aurelie_04.mp3", "character": "aurelie", "subtitle": "Oh, chouette ! Il y a une place !" },
+
+    { "at": 33489, "do": "shot", "src": "assets/v13_parking.png", "duration": 3421, "fade": 600, "from": [1.05, 0, 0], "to": [1.05, 0.5, 0], "glows": [{ "x": 61.4, "y": 52, "size": 10, "color": "#ff2a1a", "opacity": [0.9, 0.9, 0.4, 0] }, { "x": 77.5, "y": 52, "size": 10, "color": "#ff2a1a", "opacity": [0.9, 0.9, 0.4, 0] }, { "x": 69.4, "y": 43.4, "size": 7.5, "color": "#ff2a1a", "opacity": [0.8, 0.8, 0.2, 0] }], "description": "La voiture est garée devant l'entrée illuminée de la résidence." },
+    { "at": 33489, "do": "ambience", "kind": "road", "level": 0 },
+    { "at": 33489, "do": "rain", "sound": 0.17 },
+
+    { "at": 36910, "do": "shot", "src": "assets/v14_aurelie_sort.png", "duration": 7000, "fade": 1200, "from": [1.1, -3, 0], "to": [1.1, 4, 1], "ease": "ease-in-out", "description": "La portière s'ouvre : Aurélie sort sous la pluie et regarde vers l'entrée des Charmilles." },
+    { "at": 37016, "do": "sfx", "name": "doorOpen" },
+    { "at": 37116, "do": "rain", "sound": 0.22 },
+    { "at": 37616, "do": "voice", "src": "assets/aurelie_05.mp3", "character": "aurelie", "subtitle": "Allez, mamie Gisèle, j'arrive. Je cours sous la pluie pour toi. À tout de suite !" },
+    { "at": 40116, "do": "music", "volume": 0.35, "fade": 3500 },
+    { "at": 42516, "do": "sfx", "src": "@shared/audio/sfx/portiere_claque.wav", "level": 0.9 },
+    { "at": 42808, "do": "sfx", "name": "footsteps", "level": 1, "count": 10, "interval": 310 },
+    { "at": 43016, "do": "end", "fadeOut": 3200 }
+  ]
+}

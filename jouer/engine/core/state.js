@@ -9,6 +9,7 @@ const blank = () => ({
   notes: [],
   objective: null,
   done: [],
+  journal: { objectives: {}, people: {}, memories: [], seen: {} },
   scenes: {},
 });
 
@@ -26,6 +27,7 @@ export class GameState extends Emitter {
 
   load(data) {
     this.data = Object.assign(blank(), structuredClone(data || {}));
+    this.data.journal = Object.assign(blank().journal, this.data.journal);
     this.emit('change', { kind: 'reset' });
   }
 
@@ -75,21 +77,51 @@ export class GameState extends Emitter {
     return true;
   }
 
-  addNote(text) {
-    if (!text || this.data.notes.includes(text)) return false;
-    this.data.notes.push(text);
+  // Notes : { text, place } ; les anciennes sauvegardes contiennent de simples chaînes.
+  addNote(text, { place } = {}) {
+    if (!text || this.data.notes.some(n => (n?.text ?? n) === text)) return false;
+    this.data.notes.push({ text, place });
     this.changed('notes', { added: text });
     return true;
   }
 
-  setObjective(id) {
+  // Libellé et lieu gardés au moment où l'objectif apparaît, pour le carnet des scènes suivantes.
+  logObjective(id, { label, place } = {}) {
+    if (!id || this.data.journal.objectives[id]) return;
+    this.data.journal.objectives[id] = { label: label || id, place };
+  }
+
+  setObjective(id, meta) {
+    this.logObjective(id, meta);
     this.data.objective = id;
     this.changed('objective');
   }
 
-  completeObjective(id) {
+  completeObjective(id, meta) {
+    this.logObjective(id, meta);
     if (!this.data.done.includes(id)) this.data.done.push(id);
     if (this.data.objective === id) this.data.objective = null;
     this.changed('objective');
+  }
+
+  // Personnage rencontré, avec éventuellement une chose apprise sur lui.
+  addPerson(id, fact = '', { place } = {}) {
+    if (!id) return false;
+    const people = this.data.journal.people;
+    const isNew = !people[id];
+    const p = people[id] ??= { place, facts: [] };
+    const learnt = !!fact && !p.facts.includes(fact);
+    if (learnt) p.facts.push(fact);
+    if (isNew || learnt) this.changed('journal', { section: 'people', person: id, fact: learnt ? fact : '' });
+    return isNew || learnt;
+  }
+
+  // Souvenir : { id, title, text, src, place } ; src est relatif à la racine du jeu.
+  addMemory(entry) {
+    const id = entry?.id || entry?.title;
+    if (!id || this.data.journal.memories.some(m => m.id === id)) return false;
+    this.data.journal.memories.push({ ...entry, id });
+    this.changed('journal', { section: 'memories', title: entry.title || id });
+    return true;
   }
 }

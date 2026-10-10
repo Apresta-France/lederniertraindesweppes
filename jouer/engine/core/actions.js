@@ -1,4 +1,5 @@
 import { test } from './conditions.js';
+import { ROOT } from './paths.js';
 
 // Vocabulaire d'actions des scènes. Une action = { do: 'nom', ...paramètres }.
 // Ajouter une action : registerAction('nom', (action, ctx) => { … }) depuis n'importe quel module.
@@ -73,19 +74,38 @@ registerAction('give', (a, ctx) => ctx.game.state.addItem(a.item));
 registerAction('remove', (a, ctx) => ctx.game.state.removeItem(a.item));
 registerAction('hide', (a, ctx) => ctx.scene?.setObjectHidden(a.object ?? ctx.object?.id, true, { fade: true }));
 registerAction('show', (a, ctx) => ctx.scene?.setObjectHidden(a.object ?? ctx.object?.id, false, { fade: true }));
-registerAction('note', (a, ctx) => ctx.game.state.addNote(a.text));
+const placeOf = ctx => ({ place: ctx.scene?.data.title });
+const objectiveMeta = (id, ctx) => ({ ...placeOf(ctx), label: ctx.scene?.data.objectives?.[id] });
+
+registerAction('note', (a, ctx) => ctx.game.state.addNote(a.text, placeOf(ctx)));
 
 registerAction('objective', (a, ctx) => {
   const { state } = ctx.game;
   if (a.once && (state.data.objective || state.data.done.includes(a.set))) return;
-  if (a.complete) state.completeObjective(a.complete);
-  if (a.set) state.setObjective(a.set);
+  if (a.complete) state.completeObjective(a.complete, objectiveMeta(a.complete, ctx));
+  if (a.set) state.setObjective(a.set, objectiveMeta(a.set, ctx));
+});
+
+registerAction('person', (a, ctx) => ctx.game.state.addPerson(a.character, a.text, placeOf(ctx)));
+
+registerAction('memory', (a, ctx) => {
+  const src = a.image && ctx.scene ? ctx.scene.url(a.image) : '';
+  ctx.game.state.addMemory({
+    id: a.id, title: a.title, text: a.text, ...placeOf(ctx),
+    src: src.startsWith(ROOT.href) ? src.slice(ROOT.href.length) : src,
+  });
 });
 
 registerAction('examine', (a, ctx) => ctx.scene?.openPanel?.(a.panel, ctx));
+registerAction('popup', (a, ctx) => ctx.scene?.popup?.(a));
 registerAction('panelNote', (a, ctx) => ctx.scene?.panelNote?.(a.text));
 registerAction('close', (a, ctx) => ctx.scene?.closePanel?.());
 registerAction('goto', (a, ctx) => ctx.game.scenes.goto(a.scene));
+registerAction('fadeOut', (a, ctx) => {
+  const ms = a.ms ?? 1500;
+  if (a.music !== false) ctx.game.audio.music.stop(ms);
+  return ctx.scene?.fadeOut?.(ms);
+});
 registerAction('menu', (a, ctx) => ctx.game.shell.toMenu());
 registerAction('wait', (a, ctx) => ctx.scene.sleep(a.ms ?? 0));
 

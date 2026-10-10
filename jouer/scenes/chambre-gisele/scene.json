@@ -13,10 +13,29 @@
     "alt": "Chambre de Gisèle, au soir. Un lit à gauche, une commode, une étagère avec la télévision, Gisèle assise dans son fauteuil près de la fenêtre, la porte du couloir à droite."
   },
   "music": { "src": "@shared/audio/music/chambre_gisele.mp3", "fade": 2500 },
-  "objectives": { "parler-gisele": "Parler à Gisèle", "explorer": "Explorer la chambre de Gisèle" },
+  "objectives": { "analyser": "Analyser la chambre et son contenu" },
   "onEnter": [
-    { "do": "objective", "set": "parler-gisele", "once": true },
-    { "do": "wait", "ms": 3000 },
+    { "do": "objective", "set": "analyser", "once": true },
+    {
+      "do": "if",
+      "cond": { "not": { "var": "chambre-gisele.bienvenue" } },
+      "then": [
+        { "do": "set", "var": "chambre-gisele.bienvenue", "value": true },
+        { "do": "wait", "ms": 1000 },
+        {
+          "do": "popup",
+          "kicker": "Bienvenue",
+          "title": "Le Dernier Train des Weppes",
+          "text": [
+            "Bienvenue dans Le Dernier Train des Weppes.",
+            "Ce jeu est un point & click : cliquez un peu partout dans le décor pour trouver des indices, faire venir des personnages et avancer dans l'histoire."
+          ],
+          "button": "Commencer"
+        },
+        { "do": "wait", "ms": 1500 }
+      ],
+      "else": [{ "do": "wait", "ms": 3000 }]
+    },
     {
       "do": "voice",
       "character": "gisele",
@@ -142,7 +161,6 @@
           "do": "if",
           "cond": { "var": "chambre-gisele.conversations", "gte": 3 },
           "then": [
-            { "do": "objective", "set": "explorer", "complete": "parler-gisele" },
             {
               "do": "note",
               "text": "Gisèle se souvient de la gare de Fournes. Le dernier train passait « au weppe »."
@@ -214,27 +232,51 @@
           }
         },
         "gare": {
-          "sprite": "assets/tv_gare.png",
+          "frames": ["assets/tv_journal.png", "assets/tv_gare.png"],
+          "interval": 2500,
           "sound": {
             "src": "assets/son_TV.mp3",
             "onEnded": [
               { "do": "setState", "object": "tv", "state": "off" },
-              { "do": "sfx", "name": "click" }
+              { "do": "sfx", "name": "click" },
+              { "do": "wait", "ms": 1200 },
+              {
+                "do": "voice",
+                "character": "gisele",
+                "src": "assets/bizarre_tele_vivante.mp3",
+                "wait": true
+              },
+              { "do": "wait", "ms": 1500 },
+              { "do": "objective", "complete": "analyser" },
+              { "do": "fadeOut", "ms": 2500 },
+              { "do": "goto", "scene": "aurelie-voiture" }
             ]
           }
         }
       },
       "onUse": [
-        { "do": "cycleState", "object": "tv", "states": ["off", "journal", "gare"] },
-        { "do": "sfx", "name": "click" },
         {
-          "do": "say",
-          "byState": "tv",
-          "texts": {
-            "off": "La télévision est éteinte.",
-            "journal": "Le journal régional. La présentatrice parle d'un orage dans les Weppes.",
-            "gare": "« … l'ancienne gare de Fournes-en-Weppes s'est effondrée cette nuit. »"
-          }
+          "do": "if",
+          "cond": { "state": "tv", "ne": "off" },
+          "then": [
+            { "do": "sfx", "name": "soft" },
+            { "do": "say", "text": "La télévision s'est allumée toute seule." }
+          ],
+          "else": [
+            {
+              "do": "if",
+              "cond": { "var": "chambre-gisele.tele" },
+              "then": [
+                { "do": "sfx", "name": "soft" },
+                { "do": "say", "text": "La télévision s'est éteinte d'elle-même." }
+              ],
+              "else": [
+                { "do": "sfx", "name": "click" },
+                { "do": "voice", "src": "assets/tele_pas_fonctionner.mp3" },
+                { "do": "say", "text": "La télé ne semble pas fonctionner pour le moment." }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -367,7 +409,22 @@
                     { "do": "hide", "object": "sandrine" },
                     { "do": "setState", "object": "bouton", "state": "eteint" },
                     { "do": "wait", "ms": 1500 },
-                    { "do": "setState", "object": "porte", "state": "fermee" }
+                    { "do": "setState", "object": "porte", "state": "fermee" },
+                    { "do": "set", "var": "chambre-gisele.sandrine-partie", "value": true },
+                    {
+                      "do": "if",
+                      "cond": {
+                        "all": [
+                          { "var": "chambre-gisele.boite-essayee" },
+                          { "not": { "var": "chambre-gisele.tele" } }
+                        ]
+                      },
+                      "then": [
+                        { "do": "set", "var": "chambre-gisele.tele", "value": true },
+                        { "do": "wait", "ms": 2000 },
+                        { "do": "setState", "object": "tv", "state": "gare" }
+                      ]
+                    }
                   ]
                 }
               ]
@@ -419,12 +476,12 @@
           "do": "if",
           "cond": { "state": "porte", "eq": "ouverte" },
           "then": [
-            { "do": "voice", "src": "assets/porte.mp3" },
+            { "do": "sfx", "name": "soft" },
             { "do": "say", "text": "La porte est ouverte sur le couloir de la résidence." }
           ],
           "else": [
-            { "do": "sfx", "name": "soft" },
-            { "do": "say", "text": "La porte du couloir est fermée." }
+            { "do": "voice", "src": "assets/porte.mp3" },
+            { "do": "say", "text": "Derrière cette porte se trouve l'infirmière." }
           ]
         }
       ]
@@ -466,6 +523,23 @@
             {
               "do": "note",
               "text": "La boîte en fer de l'étagère est fermée par un cadenas. Trouver la clé."
+            },
+            { "do": "set", "var": "chambre-gisele.boite-essayee", "value": true },
+            {
+              "do": "if",
+              "cond": {
+                "all": [
+                  { "var": "chambre-gisele.sandrine-partie" },
+                  { "not": { "var": "chambre-gisele.tele" } }
+                ]
+              },
+              "then": [
+                { "do": "set", "var": "chambre-gisele.tele", "value": true },
+                { "do": "wait", "ms": 2000 },
+                { "do": "close" },
+                { "do": "wait", "ms": 1500 },
+                { "do": "setState", "object": "tv", "state": "gare" }
+              ]
             }
           ]
         },

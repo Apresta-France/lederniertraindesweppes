@@ -3,7 +3,19 @@ import * as synth from '../audio/synth.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const plain = html => { const d = document.createElement('div'); d.innerHTML = html || ''; return d.textContent.trim(); };
-const kb = ([k, x, y]) => `translate(${x}%,${y}%) scale(${k})`;
+const kb = ([k, x, y], roll) => `translate(${x}%,${y}%) scale(${k})${roll != null ? ` rotate(${roll}deg)` : ''}`;
+const div = (className) => Object.assign(document.createElement('div'), { className });
+
+const LOOPS = { rain: synth.rainLoop, wind: synth.windLoop, road: synth.roadLoop };
+
+// Bruitages enregistrés, décodés une fois pour toutes les scènes.
+const samples = new Map();
+const loadSample = (ctx, url) => {
+  if (!samples.has(url)) {
+    samples.set(url, fetch(url).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => b && ctx.decodeAudioData(b)).catch(() => null));
+  }
+  return samples.get(url);
+};
 
 const ornament = cls => `<div class="cine-orn ${cls || ''}"><b></b><i></i><b></b></div>`;
 
@@ -62,6 +74,7 @@ export class CinematicScene extends Scene {
       <div class="cine-flash"></div>
       <div class="cine-cards"></div>
       <div class="cine-caption"></div>
+      <div class="cine-sub" aria-hidden="true"><span class="who"></span><span class="txt"></span></div>
       <div class="cine-logo"></div>
       ${skip.mode !== 'none' && skip.label ? `<div class="cine-skip">${esc(skip.label)}</div>` : ''}`;
     const $ = s => el.querySelector(s);
@@ -82,18 +95,24 @@ export class CinematicScene extends Scene {
   start() {
     const skipMode = this.data.skip?.mode ?? 'end';
     if (skipMode !== 'none' && !this.game.embed) {
-      this.listen(this.el, 'click', () => this.skip());
+      const go = () => skipMode === 'end' ? this.askSkip() : this.skip();
+      this.listen(this.el, 'click', e => { if (!e.target.closest('.cine-confirm')) go(); });
       this.listen(window, 'keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.skip(); }
-      });
+        if (this.confirmEl) { this.onConfirmKey(e); return; }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+      }, true);
     }
     this.onDispose(() => {
       cancelAnimationFrame(this.raf);
       cancelAnimationFrame(this.tickRaf);
       clearInterval(this.tickTimer);
       this.stopLoops();
+      this.dropSfx();
+      this.stopVoice();
     });
     if (this.canvas) this.startRain();
+    const ctx = this.game.audio.context();
+    if (ctx) (this.data.timeline || []).forEach(it => { if (it.do === 'sfx' && it.src) loadSample(ctx, this.url(it.src)); });
     this.t0 = performance.now();
     const tick = () => { this.step(); this.tickRaf = requestAnimationFrame(tick); };
     this.tickRaf = requestAnimationFrame(tick);
@@ -132,12 +151,22 @@ export class CinematicScene extends Scene {
 
   step() {
     if (this.disposed || this.paused) return;
+    this.followMusic();
     const now = this.time;
     while (this.queue.length && this.queue[0].time <= now && !this.disposed && !this.paused) {
       const ev = this.queue.shift();
       this.cursor = ev.time;
       try { ev.fn(); } finally { this.cursor = null; }
     }
+  }
+
+  // Musique « sync » : l'horloge de la scène suit la piste (latence au démarrage, onglet masqué…),
+  // pour que les coupes restent calées sur les temps forts.
+  followMusic() {
+    const mc = this.musicClock;
+    if (!mc || mc.el !== this.game.audio.music.el || mc.el.paused || mc.el.ended || !mc.el.currentTime) return;
+    const drift = this.time - (mc.from + mc.el.currentTime * 1000);
+    if (Math.abs(drift) > 40) this.t0 += drift;
   }
 
   schedule(from) {
@@ -151,6 +180,8 @@ export class CinematicScene extends Scene {
     this.el.getAnimations({ subtree: true }).forEach(a => { if (a.playState === 'running') a.pause(); });
     this.game.audio.music.el?.pause();
     this.applyLoops(0);
+    this.muteSfx(true);
+    this.voiceHandle?.el.pause();
   }
 
   resume() {
@@ -162,6 +193,11 @@ export class CinematicScene extends Scene {
     const music = this.game.audio.music;
     if (music.el && music.src) music.el.play().catch(() => {});
     this.applyLoops();
+    this.muteSfx(false);
+    const rv = this.resumeVoice;
+    this.resumeVoice = null;
+    if (rv) this.startVoice(rv.it, this.time - rv.from);
+    else this.voiceHandle?.el.play().catch(() => {});
   }
 
   // Reconstitue l'état à l'instant `t` : la frise est rejouée en silence et chaque animation créée
@@ -172,12 +208,17 @@ export class CinematicScene extends Scene {
     this.clearTimers();
     this.el.getAnimations({ subtree: true }).forEach(a => a.cancel());
     this.stopLoops();
+    this.dropSfx();
+    this.stopVoice();
     this.game.audio.music.stop(0);
     cancelAnimationFrame(this.raf);
     this.render();
     if (this.canvas) this.startRain();
     this.finishing = false;
     this.music = null;
+    this.musicClock = null;
+    this.pendingVoice = null;
+    this.resumeVoice = null;
     this.loopLevels = {};
 
     const created = [];
@@ -204,12 +245,68 @@ export class CinematicScene extends Scene {
       const music = this.game.audio.music;
       music.play(this.url(it.src), { fade: 0, loop: it.loop ?? true, volume: this.music.volume });
       const el = music.el;
-      const offset = (t - from) / 1000;
+      const start = from - (it.offset || 0);
+      const offset = (t - start) / 1000;
       const seekTo = () => { el.currentTime = el.loop && el.duration ? offset % el.duration : offset; };
       if (el.readyState >= 1) seekTo(); else el.addEventListener('loadedmetadata', seekTo, { once: true });
       el.pause();
+      if (it.sync) this.musicClock = { el, from: start };
     }
+    this.resumeVoice = this.pendingVoice;
     if (play) this.resume();
+  }
+
+  // Mode « end » : le clic ne passe pas directement, la cinématique se fige et le joueur confirme.
+  askSkip() {
+    if (this.finishing || this.confirmEl) return;
+    this.pause();
+    this.game.audio.ui('select');
+    this.confirmReturn = document.activeElement;
+    this.el.removeAttribute('role');
+    const box = this.confirmEl = div('cine-confirm');
+    box.innerHTML = `<div class="cine-confirm-card" role="alertdialog" aria-modal="true" aria-labelledby="cine-confirm-t">
+        <h3 id="cine-confirm-t">Voulez-vous vraiment passer la cinématique ?</h3>
+        ${ornament()}
+        <div class="cine-confirm-acts">
+          <button type="button" class="cine-confirm-btn" data-confirm="yes">Oui</button>
+          <button type="button" class="cine-confirm-btn ghost" data-confirm="no">Annuler</button>
+        </div>
+      </div>`;
+    box.addEventListener('click', e => {
+      const b = e.target.closest('[data-confirm]');
+      if (b) this.closeConfirm(b.dataset.confirm === 'yes');
+      else if (e.target === box) this.closeConfirm(false);
+    });
+    this.el.appendChild(box);
+    box.querySelector('[data-confirm="no"]').focus();
+    this.announce('Voulez-vous vraiment passer la cinématique ? Oui, ou Annuler.');
+  }
+
+  onConfirmKey(e) {
+    if (e.repeat) { e.preventDefault(); return; }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      this.closeConfirm(false);
+    } else if (e.key === 'Tab') {
+      const btns = [...this.confirmEl.querySelectorAll('button')];
+      const i = btns.indexOf(document.activeElement);
+      e.preventDefault();
+      btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+    }
+  }
+
+  closeConfirm(skip) {
+    const box = this.confirmEl;
+    if (!box) return;
+    this.confirmEl = null;
+    box.remove();
+    this.el.setAttribute('role', 'button');
+    this.game.audio.ui(skip ? 'select' : 'soft');
+    this.resume();
+    if (skip) this.skip();
+    else if (this.confirmReturn?.isConnected) this.confirmReturn.focus();
+    this.confirmReturn = null;
   }
 
   skip() {
@@ -228,6 +325,7 @@ export class CinematicScene extends Scene {
   jumpTo(at) {
     this.clearTimers();
     this.t0 = performance.now() - at;
+    if (this.musicClock) this.musicClock.el.currentTime = Math.max(0, at - this.musicClock.from) / 1000;
     this.cardsEl.querySelectorAll('.cine-card').forEach(c => this.removeCard(c, 1200));
     this.schedule(at);
   }
@@ -259,26 +357,45 @@ export class CinematicScene extends Scene {
     },
 
     shot(s) {
-      const fade = s.fade ?? 1000;
-      const layer = document.createElement('div');
-      layer.className = 'cine-layer';
+      const fade = s.fade ?? 1000, total = s.duration + fade;
+      const layer = div('cine-layer'), rig = div('cine-rig'), frame = div('cine-frame');
       const ease = s.ease || (s.shake ? 'ease-out' : 'cubic-bezier(.3,.1,.4,1)');
       const from = s.from || [1, 0, 0], to = s.to || from;
+      const [r0, r1] = s.roll || [];
+      frame.animate([{ transform: kb(from, r0) }, { transform: kb(to, r1 ?? r0) }], { duration: total, fill: 'forwards', easing: ease });
       const addImg = (src, hidden) => {
         const img = document.createElement('img');
         img.src = this.url(src);
         img.alt = '';
         if (hidden) img.style.opacity = 0;
         if (s.dark) img.style.filter = 'brightness(.42) saturate(.8)';
-        img.animate([{ transform: kb(from) }, { transform: kb(to) }], { duration: s.duration + fade, fill: 'forwards', easing: ease });
-        layer.appendChild(img);
+        frame.appendChild(img);
         return img;
       };
       const img = addImg(s.src);
       this.frames = s.frames?.length ? [img, ...s.frames.map(f => addImg(f, true))] : null;
+      if (s.glows?.length) frame.appendChild(this.glows(s.glows, img, total));
+      rig.appendChild(frame);
+      layer.appendChild(rig);
+      if (s.drive && !this.reduceMotion) this.drive(rig, s.drive);
+      if (s.lamps && !this.reduceMotion) layer.appendChild(this.lamps(s.lamps));
       this.stage.appendChild(layer);
-      layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: Math.max(1, fade), fill: 'forwards', easing: 'ease-in-out' });
       const prev = [...this.stage.children].filter(l => l !== layer);
+      const whip = !this.reduceMotion && /^whip-(left|right)$/.exec(s.transition || '');
+      if (whip) {
+        const d = whip[1] === 'left' ? 1 : -1, ms = Math.max(1, fade);
+        layer.animate([
+          { opacity: 0, transform: `translateX(${d * 45}%) scaleX(1.15)`, filter: 'blur(18px)' },
+          { opacity: 1, offset: 0.4 },
+          { opacity: 1, transform: 'none', filter: 'blur(0)' },
+        ], { duration: ms, fill: 'forwards', easing: 'cubic-bezier(.5,0,.2,1)' });
+        prev.forEach(l => l.animate([
+          { opacity: 1, transform: 'none', filter: 'blur(0)' },
+          { opacity: 0, transform: `translateX(${-d * 45}%) scaleX(1.15)`, filter: 'blur(18px)' },
+        ], { duration: ms, fill: 'forwards', easing: 'cubic-bezier(.5,0,.2,1)' }));
+      } else {
+        layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: Math.max(1, fade), fill: 'forwards', easing: 'ease-in-out' });
+      }
       this.later(() => prev.forEach(l => l.remove()), fade + 50);
       if (s.rain != null) this.rainTarget = s.rain;
       (s.flashes || []).forEach(([dt, p]) => this.later(() => this.flash(p, s.dark ? img : null), dt));
@@ -302,8 +419,16 @@ export class CinematicScene extends Scene {
         return;
       }
       const { music } = this.game.audio;
-      if (it.src) music.play(this.url(it.src), { fade: it.fade ?? 2500, loop: it.loop ?? true, volume: it.volume ?? 1 });
-      else music.fadeTo(it.volume ?? 1, it.fade ?? 1000);
+      if (it.src) {
+        music.play(this.url(it.src), { fade: it.fade ?? 2500, loop: it.loop ?? true, volume: it.volume ?? 1 });
+        if (it.offset) music.el.currentTime = it.offset / 1000;
+        this.musicClock = it.sync ? { el: music.el, from: (this.cursor ?? this.time) - (it.offset || 0) } : null;
+      } else music.fadeTo(it.volume ?? 1, it.fade ?? 1000);
+    },
+
+    voice(it) {
+      if (this.silent) this.pendingVoice = { it, from: this.cursor };
+      else this.startVoice(it, 0);
     },
 
     rain(it) {
@@ -313,6 +438,11 @@ export class CinematicScene extends Scene {
 
     ambience(it) {
       this.loopTo(it.kind || 'wind', it.level ?? 0.5, 1.2);
+    },
+
+    sfx(it) {
+      if (it.src) this.playFile(it);
+      else this.sound(it.name, it);
     },
 
     clear() {
@@ -355,6 +485,50 @@ export class CinematicScene extends Scene {
     },
   };
 
+  // Réplique { src, character?, subtitle? } : sous-titre affiché le temps du son, la musique baisse (VoiceChannel).
+  // offset (ms) : reprise en cours de phrase après un seek.
+  startVoice(it, offset = 0) {
+    this.stopVoice();
+    const sub = this.el.querySelector('.cine-sub');
+    const who = (it.character && this.game.data.characters?.[it.character]?.name) || '';
+    const text = (it.subtitle || this.data.sounds?.[it.src]?.caption || '').trim();
+    const token = this.subToken = (this.subToken || 0) + 1;
+    const hide = () => { if (this.subToken === token) sub.classList.remove('on'); };
+    const show = () => {
+      if (!text || this.subToken !== token) return;
+      sub.querySelector('.who').textContent = who;
+      sub.querySelector('.txt').textContent = text;
+      sub.classList.add('on');
+    };
+    if (text && !offset) this.announce(who ? `${who} : ${text}` : text);
+    const audio = this.game.audio;
+    if (!it.src || !audio.volume('voice')) {
+      const left = 2600 + text.length * 45 - offset;
+      if (text && left > 0) { show(); this.later(hide, left); }
+      return;
+    }
+    const handle = this.voiceHandle = audio.voice.play(this.url(it.src));
+    handle.onEnd = () => {
+      if (this.voiceHandle === handle) this.voiceHandle = null;
+      hide();
+    };
+    if (!offset) { show(); return; }
+    const el = handle.el;
+    const go = () => {
+      if (offset / 1000 >= el.duration) handle.stop();
+      else { el.currentTime = offset / 1000; show(); }
+    };
+    if (el.readyState >= 1) go(); else el.addEventListener('loadedmetadata', go, { once: true });
+  }
+
+  stopVoice() {
+    const handle = this.voiceHandle;
+    this.voiceHandle = null;
+    this.subToken = (this.subToken || 0) + 1;
+    handle?.stop();
+    this.el.querySelector('.cine-sub')?.classList.remove('on');
+  }
+
   removeCard(card, ms) {
     card.style.transition = `opacity ${ms}ms ease, filter ${ms}ms ease`;
     card.classList.add('out');
@@ -364,13 +538,13 @@ export class CinematicScene extends Scene {
   flash(p, darkImg) {
     const k = this.reduceMotion ? 0.3 : 1;
     if (!darkImg) {
-      const im = this.stage.lastChild?.firstChild;
+      const im = this.stage.lastChild?.querySelector('img');
       im?.animate([{ filter: 'brightness(1)' }, { filter: `brightness(${1 + 0.35 * k}) contrast(1.1)` }, { filter: 'brightness(1)' }], { duration: 700, easing: 'ease-out' });
     }
     const o = Math.min(p, 1) * k;
     this.flashEl.animate([{ opacity: 0 }, { opacity: 0.85 * o }, { opacity: 0.08 * k }, { opacity: 0.55 * o }, { opacity: 0 }], { duration: 520, easing: 'ease-out' });
     darkImg?.animate([{ filter: 'brightness(.42) saturate(.8)' }, { filter: 'brightness(1.5) saturate(1.1)' }, { filter: 'brightness(.9)' }, { filter: 'brightness(.42) saturate(.8)' }], { duration: 1600, easing: 'ease-out' });
-    this.sound('thunder', p);
+    this.sound('thunder', { level: p });
   }
 
   shake(px, duration) {
@@ -380,6 +554,60 @@ export class CinematicScene extends Scene {
       kf.push({ transform: `translate(${(Math.random() * 2 - 1) * a}px,${(Math.random() * 2 - 1) * a}px)` });
     }
     this.stage.animate(kf, { duration, easing: 'linear' });
+  }
+
+  // Caméra embarquée : trépidation de la route et quelques bosses, `px` = amplitude en pixels.
+  drive(el, px) {
+    const kf = [], n = 32;
+    for (let i = 0; i <= n; i++) {
+      const bump = i % 11 === 3 ? 2.2 : i % 11 === 4 ? -1.2 : 0;
+      const y = i === n ? 0 : (Math.random() * 2 - 1) * px * 0.6 + bump * px;
+      const x = i === n ? 0 : (Math.random() * 2 - 1) * px * 0.35;
+      kf.push({ transform: `translate(${x.toFixed(2)}px,${y.toFixed(2)}px) rotate(${(x * 0.04).toFixed(3)}deg)` });
+    }
+    kf[0].transform = 'none';
+    el.animate(kf, { duration: 2600, iterations: Infinity, easing: 'linear' });
+  }
+
+  // Lampadaires qui défilent : une bande de lumière chaude traverse l'image à chaque période.
+  lamps(o) {
+    const { interval = 1400, dir = 'left', level = 0.3, color = '#ffc777' } = typeof o === 'number' ? { interval: o } : o;
+    const el = div('cine-lamp');
+    el.style.background = `linear-gradient(100deg,transparent 15%,${color} 50%,transparent 85%)`;
+    el.style.opacity = level;
+    const [a, b] = dir === 'left' ? ['330%', '-130%'] : ['-130%', '330%'];
+    el.animate([
+      { transform: `translateX(${a}) skewX(-12deg)` },
+      { transform: `translateX(${b}) skewX(-12deg)`, offset: 0.5 },
+      { transform: `translateX(${b}) skewX(-12deg)` },
+    ], { duration: interval, iterations: Infinity, easing: 'linear' });
+    return el;
+  }
+
+  // Lumières de la voiture (phares, feux, clignotant) posées en % de l'image ; elles suivent le cadre.
+  glows(list, img, total) {
+    const box = div('cine-glows');
+    img.addEventListener('load', () => box.style.setProperty('--r', img.naturalWidth / img.naturalHeight), { once: true });
+    list.forEach(g => {
+      const el = div('cine-glow'), core = div('');
+      const color = g.color || '#fff4dc', size = g.size ?? 6;
+      Object.assign(el.style, { left: `${g.x}%`, top: `${g.y}%`, width: `${size}%` });
+      core.style.background = `radial-gradient(circle closest-side,#fff 0,${color} 10%,color-mix(in srgb,${color} 60%,transparent) 24%,color-mix(in srgb,${color} 22%,transparent) 52%,transparent 100%)`;
+      el.appendChild(core);
+      const op = Array.isArray(g.opacity) ? g.opacity : [g.opacity ?? 1];
+      const grow = g.grow ?? 1;
+      el.animate(op.map((o, i) => ({
+        opacity: o,
+        transform: `translate(-50%,-50%) scale(${1 + (grow - 1) * (op.length > 1 ? i / (op.length - 1) : 1)})`,
+      })).concat(op.length > 1 ? [] : [{ opacity: op[0], transform: `translate(-50%,-50%) scale(${grow})` }]),
+      { duration: total, delay: g.delay || 0, fill: 'both', easing: 'ease-in-out' });
+      if (g.blink) {
+        core.animate([{ opacity: 1 }, { opacity: 1, offset: 0.42 }, { opacity: 0, offset: 0.5 }, { opacity: 0, offset: 0.92 }, { opacity: 1 }],
+          { duration: g.blink, delay: g.delay || 0, iterations: Infinity, fill: 'both' });
+      }
+      box.appendChild(el);
+    });
+    return box;
   }
 
   clockFrame(n) {
@@ -394,12 +622,65 @@ export class CinematicScene extends Scene {
     this.flashEl.animate([{ opacity: 0, background: '#ffd9a0' }, { opacity: 0.18, background: '#ffd9a0' }, { opacity: 0, background: '#ffd9a0' }], { duration: 500 });
   }
 
-  sound(name, power = 1) {
+  // interval en ms ; les valeurs absentes prennent les défauts de synth.js.
+  sound(name, { level = 1, pan, count, interval } = {}) {
     if (this.silent) return;
-    const audio = this.game.audio, ctx = audio.context();
+    const ctx = this.game.audio.context();
     if (!ctx) return;
-    if (name === 'thunder') synth.thunder(ctx, audio.sfxBus, power, power >= 1 ? 0.08 : 0.35 + Math.random() * 0.4);
-    else if (name === 'rumble') synth.rumble(ctx, audio.sfxBus);
+    const out = this.sfxOut(ctx), sec = interval != null ? interval / 1000 : undefined;
+    switch (name) {
+      case 'thunder': synth.thunder(ctx, out, level, level >= 1 ? 0.08 : 0.35 + Math.random() * 0.4); break;
+      case 'rumble': synth.rumble(ctx, out); break;
+      case 'passby': synth.passby(ctx, out, level, pan); break;
+      case 'wipers': synth.wipers(ctx, out, level, count, sec); break;
+      case 'indicator': synth.indicator(ctx, out, level, count, sec); break;
+      case 'doorOpen': synth.door(ctx, out, level, false); break;
+      case 'doorClose': synth.door(ctx, out, level, true); break;
+      case 'footsteps': synth.footsteps(ctx, out, level, count, sec); break;
+      default: console.warn(`[cinématique] bruitage inconnu « ${name} »`);
+    }
+  }
+
+  // Fichier audio { src, level?, pan? } : pan décale le son dans l'espace stéréo (-1 gauche, 1 droite).
+  // S'il n'est pas encore décodé, il démarre en retard, à la bonne position, pour rester calé sur la frise.
+  playFile({ src, level = 1, pan = 0 }) {
+    if (this.silent) return;
+    const ctx = this.game.audio.context();
+    if (!ctx) return;
+    const bus = this.sfxOut(ctx), t0 = ctx.currentTime;
+    loadSample(ctx, this.url(src)).then(buf => {
+      const late = ctx.currentTime - t0;
+      if (!buf || this.sfxGain !== bus || late >= buf.duration) return;
+      const node = ctx.createBufferSource(), gain = ctx.createGain();
+      node.buffer = buf;
+      gain.gain.value = level;
+      node.connect(gain);
+      if (pan && ctx.createStereoPanner) {
+        const p = ctx.createStereoPanner();
+        p.pan.value = pan;
+        gain.connect(p); p.connect(bus);
+      } else gain.connect(bus);
+      node.start(0, late);
+    });
+  }
+
+  // Les bruitages passent par un bus propre à la scène : pause et seek coupent aussi ceux déjà programmés.
+  sfxOut(ctx) {
+    if (!this.sfxGain) {
+      this.sfxGain = ctx.createGain();
+      this.sfxGain.connect(this.game.audio.sfxBus);
+    }
+    return this.sfxGain;
+  }
+
+  muteSfx(muted) {
+    const ctx = this.game.audio.ctx;
+    if (ctx && this.sfxGain) this.sfxGain.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.03);
+  }
+
+  dropSfx() {
+    this.sfxGain?.disconnect();
+    this.sfxGain = null;
   }
 
   loopTo(kind, level, timeConstant) {
@@ -408,8 +689,8 @@ export class CinematicScene extends Scene {
     const audio = this.game.audio, ctx = audio.context();
     if (!ctx) return;
     if (!this.loops[kind]) {
-      if (!level) return;
-      const make = kind === 'rain' ? synth.rainLoop : synth.windLoop;
+      const make = LOOPS[kind];
+      if (!level || !make) return;
       this.loops[kind] = make(ctx, audio.sfxBus);
     }
     this.loops[kind].gain.gain.setTargetAtTime(level, ctx.currentTime, timeConstant);
@@ -470,11 +751,12 @@ export class CinematicScene extends Scene {
       return;
     }
     this.clearTimers();
+    if (skipped) this.stopVoice();
     const natural = endItem?.fadeOut ?? 1400;
     const fade = skipped ? Math.min(700, natural || 0) : natural;
     if (!endItem?.keepMusic) this.game.audio.music.stop(skipped ? 650 : Math.max(fade, 600) + 300);
     const ctx = this.game.audio.ctx;
-    if (ctx) Object.values(this.loops).forEach(l => l.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.2));
+    if (ctx) Object.values(this.loops).forEach(l => l.gain.gain.setTargetAtTime(0, ctx.currentTime, Math.max(0.2, fade / 3000)));
     if (fade) this.el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: fade, fill: 'forwards' });
     this.later(() => this.game.scenes.next(this, this.data.next), fade + 20);
   }

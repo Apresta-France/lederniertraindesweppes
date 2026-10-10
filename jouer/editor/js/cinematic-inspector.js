@@ -5,6 +5,17 @@ import { OPS, OP_NAMES, totalDuration } from './timeline-ops.js';
 import { createKenBurnsPreview } from './kenburns.js';
 import { formatSeconds } from './paths.js';
 
+const SFX_NAMES = [
+  ['passby', 'passby — voiture qui passe'],
+  ['wipers', 'wipers — essuie-glaces'],
+  ['indicator', 'indicator — clignotant'],
+  ['doorOpen', 'doorOpen — portière qui s’ouvre'],
+  ['doorClose', 'doorClose — portière qui claque'],
+  ['footsteps', 'footsteps — course sur sol mouillé, qui s’éloigne'],
+  ['thunder', 'thunder — tonnerre'],
+  ['rumble', 'rumble — grondement'],
+];
+
 const EASES = ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'cubic-bezier(.3,.1,.4,1)', 'cubic-bezier(.45,.05,.55,.95)'];
 
 function itemValidator(value) {
@@ -75,10 +86,13 @@ export function renderItemInspector(scope, index, { resort }) {
         section('Mouvement',
           ms('Durée (duration, ms)', 'duration'),
           ms('Fondu enchaîné (fade, ms)', 'fade', '0 = cut. Par défaut : 1000.'),
+          scope.select({ label: 'Transition (transition)', path: p('transition'), optional: true, options: [['fade', 'fondu'], ['whip-left', 'filé vers la gauche'], ['whip-right', 'filé vers la droite']], help: 'Le filé dure le temps du fondu (300 à 400 ms conseillés).' }),
           scope.tuple({ label: 'Cadre de début (from)', path: p('from'), labels: ['Échelle', 'X %', 'Y %'], integer: false, step: 0.01 }),
           scope.tuple({ label: 'Cadre de fin (to)', path: p('to'), labels: ['Échelle', 'X %', 'Y %'], integer: false, step: 0.01 }),
           h('datalist', { id: easeList }, EASES.map((e) => h('option', { value: e }))),
           scope.text({ label: 'Courbe (ease)', path: p('ease'), list: easeList, mono: true, placeholder: 'cubic-bezier(.3,.1,.4,1)' }),
+          scope.tuple({ label: 'Roulis (roll, degrés)', path: p('roll'), labels: ['Début', 'Fin'], integer: false, step: 0.1, optional: true, help: 'Inclinaison de la caméra. Prévoir une échelle d’au moins 1 + 0,03 × degré.' }),
+          scope.number({ label: 'Caméra embarquée (drive, px)', path: p('drive'), step: 0.1, min: 0, help: 'Trépidation de la route, pour les plans dans la voiture.' }),
           createKenBurnsPreview(scope, base)),
         section('Ambiance',
           scope.check({ label: 'Plan sombre (dark)', path: p('dark') }),
@@ -86,6 +100,9 @@ export function renderItemInspector(scope, index, { resort }) {
           scope.number({ label: 'Pluie pendant le plan (rain)', path: p('rain'), step: 0.05, min: 0, max: 1 }),
           scope.json({ label: 'Éclairs (flashes)', path: p('flashes'), rows: 2, help: '[[délai ms, intensité], …]', validate: (v) => (Array.isArray(v) && v.every((f) => Array.isArray(f) && f.length === 2 && f.every((n) => typeof n === 'number')) ? null : 'Format attendu : [[900, 1], [1450, 0.5]].') }),
           sfxField(scope, p('sfx'))),
+        section('Lumières',
+          scope.json({ label: 'Lampadaires qui défilent (lamps)', path: p('lamps'), rows: 2, help: '{ "interval": 1860, "dir": "left", "level": 0.25, "color": "#ffc777" } ou une période en ms.' }),
+          scope.json({ label: 'Lumières de la voiture (glows)', path: p('glows'), rows: 5, validate: validators.array, help: '[{ "x": 56, "y": 62, "size": 4, "color": "#ff2a1a", "opacity": [0.3, 1], "grow": 1.8, "blink": 930 }] — x, y en % de l’image.' })),
       ];
       break;
     }
@@ -114,7 +131,15 @@ export function renderItemInspector(scope, index, { resort }) {
         scope.asset({ label: 'Piste (src)', path: p('src'), kind: 'audio', help: 'Vide : ne change que le volume de la piste en cours.' }),
         scope.number({ label: 'Volume (0 à 1)', path: p('volume'), step: 0.05, min: 0, max: 1 }),
         ms('Fondu (fade, ms)', 'fade'),
-        scope.check({ label: 'En boucle (loop)', path: p('loop'), keepFalse: true }))];
+        scope.check({ label: 'En boucle (loop)', path: p('loop'), keepFalse: true }),
+        scope.check({ label: 'Caler la frise sur la musique (sync)', path: p('sync'), help: 'L’horloge de la scène suit la piste : les coupes restent sur les temps forts même si le fichier tarde à démarrer.' }),
+        ms('Démarrer la piste à (offset, ms)', 'offset', 'Instant du fichier audio où la lecture commence.'))];
+      break;
+    case 'voice':
+      specific = [section('Réplique',
+        scope.asset({ label: 'Fichier (src)', path: p('src'), kind: 'audio', optional: false }),
+        scope.text({ label: 'Personnage (character)', path: p('character'), mono: true, placeholder: 'aurelie', help: 'Identifiant dans shared/characters : son nom s’affiche au-dessus du sous-titre.' }),
+        scope.text({ label: 'Sous-titre', path: p('subtitle'), multiline: true, rows: 3, help: 'Affiché le temps de la réplique et lu par les lecteurs d’écran.' }))];
       break;
     case 'rain':
       specific = [section('Pluie',
@@ -123,8 +148,17 @@ export function renderItemInspector(scope, index, { resort }) {
       break;
     case 'ambience':
       specific = [section('Ambiance sonore',
-        scope.select({ label: 'Type (kind)', path: p('kind'), optional: false, options: [['wind', 'wind — vent']] }),
+        scope.select({ label: 'Type (kind)', path: p('kind'), optional: false, options: [['wind', 'wind — vent'], ['road', 'road — roulement sur route mouillée']] }),
         scope.number({ label: 'Niveau', path: p('level'), step: 0.05, min: 0, max: 1 }))];
+      break;
+    case 'sfx':
+      specific = [section('Bruitage',
+        scope.asset({ label: 'Fichier (src)', path: p('src'), kind: 'audio', help: 'Prioritaire sur le son synthétisé. Voitures qui passent : @shared/audio/sfx/voiture_passe_01.mp3 à 08.' }),
+        scope.select({ label: 'Son synthétisé (name)', path: p('name'), options: SFX_NAMES }),
+        scope.number({ label: 'Intensité (level)', path: p('level'), step: 0.05, min: 0 }),
+        scope.number({ label: 'Panoramique (pan)', path: p('pan'), step: 0.1, min: -1, max: 1, help: 'passby : la voiture passe de -pan (gauche) à +pan (droite). Fichier : décalage stéréo fixe.' }),
+        scope.number({ label: 'Répétitions (count)', path: p('count'), integer: true, min: 1, help: 'wipers : allers-retours. indicator : clics. footsteps : foulées.' }),
+        ms('Intervalle (interval, ms)', 'interval', 'wipers : un aller-retour (1858 = 4 temps à 129 bpm). indicator : entre deux clics.'))];
       break;
     case 'fadeLayers':
       specific = [section('Fondu des calques', ms('Durée (ms)', 'duration'))];

@@ -46,6 +46,13 @@ export const OPS = {
     end: () => null,
     summary: (it) => (it.src ? `${fileName(it.src)} · volume ${num(it.volume, 1)}` : `volume → ${num(it.volume, 1)} en ${formatSeconds(num(it.fade, 1000))}`),
   },
+  voice: {
+    label: 'Réplique',
+    lane: 'audio',
+    template: (at) => ({ at, do: 'voice', src: '', character: '', subtitle: '' }),
+    end: () => null,
+    summary: (it) => `${it.character ? `${it.character} · ` : ''}${it.subtitle || fileName(it.src) || '(réplique vide)'}`,
+  },
   rain: {
     label: 'Pluie',
     lane: 'audio',
@@ -59,6 +66,13 @@ export const OPS = {
     template: (at) => ({ at, do: 'ambience', kind: 'wind', level: 0.5 }),
     end: () => null,
     summary: (it) => `${it.kind || '?'} ${num(it.level)}`,
+  },
+  sfx: {
+    label: 'Bruitage',
+    lane: 'audio',
+    template: (at) => ({ at, do: 'sfx', name: 'passby', level: 1 }),
+    end: () => null,
+    summary: (it) => `${fileName(it.src) || it.name || '?'}${'level' in it ? ` ${it.level}` : ''}${it.count ? ` × ${it.count}` : ''}`,
   },
   fx: {
     label: 'Effet',
