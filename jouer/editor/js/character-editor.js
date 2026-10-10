@@ -4,6 +4,7 @@ import { choiceDialog, confirmDialog, openDialog, toast } from './ui.js';
 import { createJsonField } from './json-field.js';
 import { sliceSheetDialog } from './sprite-sheet.js';
 import { CharacterSprite } from '../../engine/ui/character.js';
+import { CharacterPlayground } from './character-playground.js';
 
 const ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const KEY_RE = /^[\p{L}\p{N}_-]{1,40}$/u;
@@ -122,6 +123,7 @@ export class CharacterEditor {
     this.current = null;
     this.bust = Date.now();
     this.players = [];
+    this.playgrounds = new Map();
     this.voice = null;
     this.freeze = -1;
     this.audioCtx = null;
@@ -547,6 +549,7 @@ export class CharacterEditor {
 
   renderMain(resetScroll = false) {
     const scroll = resetScroll ? 0 : this.main.scrollTop;
+    for (const player of this.players) player.destroy?.();
     this.players = [];
     this.sprite = null;
     this.simButton = null;
@@ -561,6 +564,7 @@ export class CharacterEditor {
     this.main.replaceChildren(...[
       this.renderIdentity(data),
       this.renderMissing(data),
+      this.renderPlayground(data),
       this.renderTalk(data),
       this.renderAnimations(data),
       this.renderVoice(data),
@@ -646,6 +650,22 @@ export class CharacterEditor {
     const img = h('img', { src: this.url(path), alt: '', loading: 'lazy' });
     img.addEventListener('error', () => img.replaceWith(h('span', { class: 'chared-noimg is-missing' }, 'introuvable')));
     return img;
+  }
+
+  renderPlayground(data) {
+    const id = this.current.id;
+    if (!this.playgrounds.has(id)) this.playgrounds.set(id, {});
+    const playground = new CharacterPlayground({
+      id,
+      data,
+      talkFrames: SLOTS.map((_, index) => slotGet(data.sprites, index)),
+      url: (path) => this.url(path),
+      state: this.playgrounds.get(id),
+    });
+    this.players.push(playground);
+    return card('Terrain d’essai',
+      h('p', { class: 'help' }, 'Le personnage dans une salle vide, comme en jeu : déplacez-le, faites-le courir et jouez chacune de ses animations. Les modifications non enregistrées sont prises en compte.'),
+      playground.el);
   }
 
   // Talking sprite: live preview driven by the engine's own CharacterSprite.

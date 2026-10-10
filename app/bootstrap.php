@@ -18,6 +18,11 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
+if (is_file(ROOT . '/.env')) {
+    Env::load();
+    enforce_canonical_url();
+}
+
 session_name('LDTWSESSID');
 session_set_cookie_params([
     'lifetime' => 0,
@@ -31,7 +36,3 @@ session_start();
 send_security_headers();
 set_exception_handler('handle_exception');
 set_error_handler('handle_error');
-
-if (is_file(ROOT . '/.env')) {
-    Env::load();
-}

@@ -986,7 +986,7 @@ dl.help-list dd { margin: 0; }
   color: var(--gold-2);
 }
 .chared-row { margin-top: 8px; }
-.chared-row select, .chared-preview select, .chared-line select, .chared-line input, .chared-anim-head input, .chared-slot select {
+.chared-row select, .chared-preview select, .chared-pg-moves select, .chared-pg-settings select, .chared-line select, .chared-line input, .chared-anim-head input, .chared-slot select {
   min-height: 26px;
   padding: 2px 6px;
   border: 1px solid var(--line-2);
@@ -1090,6 +1090,77 @@ dl.help-list dd { margin: 0; }
 .chared-file figcaption { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; min-width: 0; }
 .chared-sounds { list-style: none; margin: 10px 0 0; padding: 0; }
 .chared-sounds li { display: flex; align-items: center; gap: 8px; padding: 2px 0; border-bottom: 1px solid #141e30; }
+
+.chared-pg { display: flex; flex-direction: column; gap: 8px; }
+.chared-pg-moves { flex-wrap: wrap; align-items: center; }
+.chared-pg-runlock { display: inline-flex; align-items: center; gap: 4px; margin: 0 4px 0 8px; }
+.chared-pg-stage {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #1b1f27 center / cover no-repeat;
+  box-shadow: 0 0 0 1px var(--line-2);
+  cursor: crosshair;
+  user-select: none;
+  touch-action: none;
+  outline: none;
+}
+.chared-pg-stage:focus-visible, .chared-pg-stage:focus { box-shadow: 0 0 0 2px var(--gold); }
+.chared-pg-char { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform; }
+.chared-pg-body { position: absolute; inset: 0; transform: scaleX(var(--flip, 1)); }
+.chared-pg-layer { position: absolute; inset: 0; visibility: hidden; }
+.chared-pg-layer.cur { visibility: visible; }
+.chared-pg-talk { transform: var(--gt, none); transform-origin: 50% 88%; }
+.chared-pg-layer > * { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; visibility: hidden; }
+.chared-pg-layer.cur > .on { visibility: visible; }
+.chared-pg-shadow {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: -2%;
+  height: 5%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .45), transparent);
+}
+.chared-pg-marker {
+  position: absolute;
+  width: 22px;
+  height: 10px;
+  margin: -5px 0 0 -11px;
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: chared-pg-ping 1s ease-out infinite;
+}
+.chared-pg-marker.is-run { border-color: #f08a5d; }
+@keyframes chared-pg-ping { from { opacity: 1; transform: scale(.6); } to { opacity: .2; transform: scale(1.4); } }
+.chared-pg-hint {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  margin: 0;
+  padding: 4px 10px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(5, 8, 14, .7);
+  color: var(--gold-2);
+  font-size: 12.5px;
+  pointer-events: none;
+}
+.chared-pg-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.chared-pg-bar .help { margin: 0; }
+.chared-pg-bar kbd { padding: 0 4px; border: 1px solid var(--line-2); border-radius: 3px; font-size: 11px; }
+.chared-pg-status { margin-left: auto; color: var(--gold-2); font-size: 12px; }
+.chared-pg-settings > summary { cursor: pointer; color: var(--muted); }
+.chared-pg-settings[open] > summary { margin-bottom: 6px; }
+.chared-pg-roles, .chared-pg-sliders { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 14px; }
+.chared-pg-roles select, .chared-pg-sliders select { width: 100%; }
+.chared-pg-range input { width: 100%; }
+.chared-pg:fullscreen { justify-content: center; padding: 16px; background: var(--bg-2, #0b1018); }
+.chared-pg:fullscreen .chared-pg-stage { max-width: none; width: auto; height: calc(100vh - 150px); align-self: center; }
 
 .sheet-layout { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 16px; align-items: start; }
 .sheet-canvas { display: block; max-width: 100%; border-radius: 4px; background: repeating-conic-gradient(#1a2233 0 25%, #222c3f 0 50%) 0 0 / 14px 14px; }

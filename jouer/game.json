@@ -9,7 +9,7 @@
     { "id": "acte1-arrivee", "label": "Acte 1 — titre et arrivée" },
     { "id": "chambre-gisele", "label": "Chambre de Gisèle" }
   ],
-  "characters": ["gisele"],
+  "characters": ["gisele", "aurelie"],
   "items": "shared/items/items.json",
   "hud": { "emptySlotVoice": "@shared/audio/rien.mp3" },
   "shell": {

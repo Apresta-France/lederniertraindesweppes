@@ -78,6 +78,31 @@ function request_is_https(): bool
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 }
 
+function enforce_canonical_url(): void
+{
+    $canonical = rtrim((string) Env::get('APP_URL', ''), '/');
+    $parts = parse_url($canonical);
+    if (!is_array($parts) || empty($parts['host']) || empty($parts['scheme'])) {
+        return;
+    }
+    $requestHost = strtolower((string) preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+    $canonicalHost = strtolower((string) $parts['host']);
+    if ($requestHost === '' || $requestHost !== $canonicalHost) {
+        return;
+    }
+    $wantHttps = strtolower((string) $parts['scheme']) === 'https';
+    if (request_is_https() === $wantHttps) {
+        return;
+    }
+    $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+    $target = $canonical . $path;
+    $query = (string) ($_SERVER['QUERY_STRING'] ?? '');
+    if ($query !== '') {
+        $target .= '?' . $query;
+    }
+    redirect($target);
+}
+
 function app_base_url(): string
 {
     $base = rtrim((string) Env::get('APP_URL', ''), '/');
