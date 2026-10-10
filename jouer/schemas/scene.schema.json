@@ -47,6 +47,17 @@
       "type": "object",
       "properties": { "src": { "type": "string" }, "fade": { "type": "integer" } }
     },
+    "sounds": {
+      "type": "object",
+      "description": "Un objet par fichier audio (chemin tel qu’écrit dans la scène). text : transcription, non affichée. caption : légende affichée pendant le son pour les personnes malentendantes.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "caption": { "type": "string" }
+        }
+      }
+    },
     "objectives": { "type": "object", "additionalProperties": { "type": "string" }, "description": "id → libellé affiché." },
     "onEnter": { "$ref": "#/$defs/actions" },
     "decor": { "type": "array", "items": { "$ref": "#/$defs/decor" } },
@@ -154,6 +165,7 @@
         "hit": { "enum": ["alpha", "rect"], "description": "alpha (défaut si sprite) : clic au pixel près. rect : tout le rectangle." },
         "character": { "type": "string", "description": "Personnage animé (shared/characters/<id>) affiché à la place du sprite." },
         "bubble": { "type": "array", "items": { "type": "number" }, "description": "Position [x, y] de la bulle « parle »." },
+        "animation": { "type": "string", "description": "Animation du personnage (character.json › animations) jouée en boucle dès l'entrée dans la scène." },
         "state": { "type": "string", "description": "État initial." },
         "states": {
           "type": "object",
@@ -189,8 +201,8 @@
       "required": ["do"],
       "properties": {
         "do": {
-          "enum": ["say", "sfx", "voice", "setState", "cycleState", "set", "inc", "take", "give", "remove", "hide", "show", "note", "objective", "examine", "panelNote", "close", "goto", "wait", "if", "menu"],
-          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src} · voice {character?, src | pool+pick, subtitle?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · objective {set?, complete?, once?} · examine {panel} · panelNote {text} · close · goto {scene} · wait {ms} · if {cond, then[], else[]} · menu"
+          "enum": ["say", "sfx", "voice", "animate", "setState", "cycleState", "set", "inc", "take", "give", "remove", "hide", "show", "note", "objective", "examine", "panelNote", "close", "goto", "wait", "if", "menu"],
+          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src, duration?} · voice {character?, src | pool+pick, subtitle?, wait?} · animate {object, animation?, to?: [x, y], duration? | speed?, flip?, hold?, keep?, wait?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · objective {set?, complete?, once?} · examine {panel} · panelNote {text} · close · goto {scene} · wait {ms} · if {cond, then[], else[]} · menu"
         }
       }
     },

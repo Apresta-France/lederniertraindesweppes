@@ -33,11 +33,15 @@ registerAction('say', (a, ctx) => {
 });
 
 registerAction('sfx', (a, ctx) => {
-  if (a.src) ctx.game.audio.playSample(ctx.scene.url(a.src));
-  else ctx.game.audio.ui(a.name || 'soft');
+  if (a.src) {
+    ctx.scene?.showSoundLegend?.(a.src);
+    ctx.game.audio.playSample(ctx.scene.url(a.src), { duration: a.duration });
+  } else ctx.game.audio.ui(a.name || 'soft');
 });
 
 registerAction('voice', (a, ctx) => ctx.scene?.speak?.(a));
+
+registerAction('animate', (a, ctx) => ctx.scene?.animate?.(a, ctx));
 
 registerAction('setState', (a, ctx) => ctx.scene?.setObjectState(a.object ?? ctx.object?.id, a.state));
 

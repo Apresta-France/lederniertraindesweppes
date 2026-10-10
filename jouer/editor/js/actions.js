@@ -5,7 +5,8 @@ import { toast } from './ui.js';
 export const ACTIONS = [
   { do: 'say', label: 'Dire un texte', help: 'text : texte affiché et lu ; ou byState (id d’objet) + texts { "état": "texte" } ; who : personnage qui parle (facultatif).', template: { do: 'say', text: '' } },
   { do: 'sfx', label: 'Bruitage', help: 'name : soft, click ou ding — ou src : fichier audio.', template: { do: 'sfx', name: 'click' } },
-  { do: 'voice', label: 'Voix', help: 'character (facultatif) ; src : fichier — ou pool + pick ("random") pris dans character.json ; subtitle : sous-titre.', template: { do: 'voice', character: 'gisele', src: '', subtitle: '' } },
+  { do: 'voice', label: 'Voix', help: 'character (facultatif) ; src : fichier — ou pool + pick ("random") pris dans character.json. La légende se rédige dans l’onglet Sons (subtitle sur l’action reste prioritaire).', template: { do: 'voice', character: 'gisele', src: '', subtitle: '' } },
+  { do: 'animate', label: 'Animer / déplacer un personnage', help: 'object : id de l’objet ; animation : nom dans character.json (absent : arrête l’animation) ; to : [x, y] position d’arrivée du coin haut-gauche ; duration (ms) ou speed (px/s, 200 par défaut) ; flip : true pour regarder vers la gauche ; hold : garder la dernière image à la fin ; keep : continuer l’animation une fois arrivé ; wait : attendre la fin.', template: { do: 'animate', object: '', animation: '', to: [0, 0], wait: true } },
   { do: 'setState', label: 'Changer l’état d’un objet', help: 'object : id de l’objet ; state : nom de l’état.', template: { do: 'setState', object: '', state: '' } },
   { do: 'cycleState', label: 'Faire défiler les états', help: 'object : id de l’objet ; states : liste ordonnée des états parcourus à chaque clic.', template: { do: 'cycleState', object: '', states: [] } },
   { do: 'set', label: 'Définir une variable', help: 'var : nom (conseil : « scene.nom ») ; value : valeur.', template: { do: 'set', var: '', value: true } },

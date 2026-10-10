@@ -1,8 +1,9 @@
 import { ACTION_NAMES } from './actions.js';
 import { OPS } from './timeline-ops.js';
-import { formatClock } from './paths.js';
+import { fileName, formatClock } from './paths.js';
+import { collectSounds, soundNeedsLegend } from './sounds.js';
 
-const OBJECT_ACTIONS = new Set(['setState', 'cycleState', 'take', 'hide', 'show']);
+const OBJECT_ACTIONS = new Set(['setState', 'cycleState', 'take', 'hide', 'show', 'animate']);
 const ITEM_ACTIONS = new Set(['take', 'give', 'remove']);
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -31,7 +32,30 @@ export function validateScene(scene, ctx) {
 
   if (scene.type === 'explore') validateExplore(scene, ctx, { warn, info, checkFile, checkScene });
   else if (scene.type === 'cinematic') validateCinematic(scene, { warn, info, checkFile, checkScene });
+  validateSoundLegends(scene, { warn, info });
   return out;
+}
+
+function validateSoundLegends(scene, { warn, info }) {
+  if (scene.sounds !== undefined && !isObj(scene.sounds)) {
+    warn('« sounds » doit être un objet { "chemin du fichier": { "text", "caption" } }.');
+    return;
+  }
+  if (isObj(scene.sounds)) {
+    for (const [path, entry] of Object.entries(scene.sounds)) {
+      if (!isObj(entry)) warn(`Son « ${path} » : l’entrée doit être un objet.`);
+      else {
+        if ('text' in entry && typeof entry.text !== 'string') warn(`Son « ${fileName(path)} » : le texte doit être une chaîne.`);
+        if ('caption' in entry && typeof entry.caption !== 'string') warn(`Son « ${fileName(path)} » : la légende doit être une chaîne.`);
+      }
+    }
+  }
+  const missing = collectSounds(scene).sounds.filter((sound) => soundNeedsLegend(scene, sound));
+  if (missing.length === 1) {
+    info(`« ${fileName(missing[0].path)} » n’a pas de légende pour les personnes malentendantes.`, { kind: 'sound', path: missing[0].path });
+  } else if (missing.length > 1) {
+    info(`${missing.length} sons n’ont pas de légende pour les personnes malentendantes (onglet Sons).`, { kind: 'sound', path: missing[0].path });
+  }
 }
 
 function validateExplore(scene, ctx, { warn, info, checkFile, checkScene }) {
@@ -96,6 +120,7 @@ function validateExplore(scene, ctx, { warn, info, checkFile, checkScene }) {
       if (OBJECT_ACTIONS.has(action.do) && action.object !== undefined) {
         const target = byId.get(action.object);
         if (!target) warn(`${where} : ${action.do} vise un objet inconnu « ${action.object} ».`, selection);
+        else if (action.do === 'animate' && action.animation && !target.character) warn(`${where} : animate joue « ${action.animation} » sur « ${action.object} », qui n’est pas un personnage animé.`, selection);
         else if (isObj(target.states)) {
           if (action.do === 'setState' && action.state && !(action.state in target.states)) warn(`${where} : l’état « ${action.state} » n’existe pas pour « ${action.object} ».`, selection);
           if (action.do === 'cycleState' && Array.isArray(action.states)) {

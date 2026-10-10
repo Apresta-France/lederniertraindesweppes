@@ -206,6 +206,16 @@ final class SceneRepository
 
     public function upload(string $id, mixed $file, bool $replace): array
     {
+        return self::storeUpload($file, $this->sceneDir($id) . '/assets', $this->scenesDir, $replace, 'assets/');
+    }
+
+    /**
+     * Moves an uploaded image or audio file into $dir (created if needed, must stay inside $base).
+     *
+     * @param 'image'|'audio'|null $only restricts the accepted kind
+     */
+    public static function storeUpload(mixed $file, string $dir, string $base, bool $replace, string $prefix, ?string $only = null): array
+    {
         if (!is_array($file) || !isset($file['error'], $file['tmp_name'], $file['name'])) {
             throw new EditorException('Aucun fichier reçu (la taille maximale acceptée par le serveur est peut-être dépassée).', 422);
         }
@@ -232,26 +242,28 @@ final class SceneRepository
         if (!$isImage && !in_array($ext, self::AUDIO_EXT, true)) {
             throw new EditorException('Format refusé. Formats acceptés : ' . implode(', ', [...self::IMAGE_EXT, ...self::AUDIO_EXT]) . '.', 415);
         }
+        if ($only !== null && $only !== ($isImage ? 'image' : 'audio')) {
+            throw new EditorException($only === 'image' ? 'Seules les images sont acceptées ici.' : 'Seuls les fichiers audio sont acceptés ici.', 415);
+        }
         if ($isImage && @getimagesize($tmp) === false) {
             throw new EditorException('Ce fichier n’est pas une image lisible.', 415);
         }
 
-        $assets = $this->sceneDir($id) . '/assets';
-        if (!is_dir($assets) && !mkdir($assets, 0775, true)) {
-            throw new EditorException('Impossible de créer le dossier assets.', 500);
+        if (!is_dir($dir) && !mkdir($dir, 0775, true)) {
+            throw new EditorException('Impossible de créer le dossier ' . basename($dir) . '.', 500);
         }
-        $assets = self::realDir($assets);
-        self::assertInside($assets, $this->scenesDir);
+        $dir = self::realDir($dir);
+        self::assertInside($dir, $base);
 
-        $target = $assets . DIRECTORY_SEPARATOR . $name;
+        $target = $dir . DIRECTORY_SEPARATOR . $name;
         if (file_exists($target) && !$replace) {
-            throw new EditorException('Un fichier « ' . $name . ' » existe déjà.', 409, ['path' => 'assets/' . $name, 'exists' => true]);
+            throw new EditorException('Un fichier « ' . $name . ' » existe déjà.', 409, ['path' => $prefix . $name, 'exists' => true]);
         }
         if (!move_uploaded_file($tmp, $target)) {
             throw new EditorException('Impossible d’enregistrer le fichier.', 500);
         }
         @chmod($target, 0664);
-        return ['path' => 'assets/' . $name, 'type' => $isImage ? 'image' : 'audio', 'size' => (int) filesize($target)];
+        return ['path' => $prefix . $name, 'type' => $isImage ? 'image' : 'audio', 'size' => (int) filesize($target)];
     }
 
     public static function sanitizeFilename(string $name): string
@@ -436,7 +448,7 @@ final class SceneRepository
         return ['user' => $m[7], 'at' => sprintf('%s-%s-%s %s:%s:%s', $m[1], $m[2], $m[3], $m[4], $m[5], $m[6])];
     }
 
-    private static function userSlug(string $user): string
+    public static function userSlug(string $user): string
     {
         $local = strtolower(explode('@', $user)[0]);
         $slug = (string) preg_replace('/[^a-z0-9]+/', '', $local);
@@ -447,7 +459,7 @@ final class SceneRepository
      * @param callable(string): string $produce receives the current file contents
      * @param (callable(string): void)|null $beforeWrite called with the previous contents when they change
      */
-    private static function guardedWrite(string $file, ?string $expectedRev, callable $produce, ?callable $beforeWrite = null): string
+    public static function guardedWrite(string $file, ?string $expectedRev, callable $produce, ?callable $beforeWrite = null): string
     {
         $handle = fopen($file, 'c+');
         if ($handle === false) {
@@ -479,7 +491,7 @@ final class SceneRepository
         }
     }
 
-    private static function listMedia(string $root, string $prefix): array
+    public static function listMedia(string $root, string $prefix): array
     {
         $out = [];
         $iterator = new RecursiveIteratorIterator(
@@ -510,7 +522,7 @@ final class SceneRepository
         return $out;
     }
 
-    private static function decode(string $raw, string $label): mixed
+    public static function decode(string $raw, string $label): mixed
     {
         try {
             return json_decode($raw, false, 512, JSON_THROW_ON_ERROR);
@@ -519,7 +531,7 @@ final class SceneRepository
         }
     }
 
-    private static function realDir(string $path): string
+    public static function realDir(string $path): string
     {
         $real = realpath($path);
         if ($real === false || !is_dir($real)) {
@@ -528,7 +540,7 @@ final class SceneRepository
         return $real;
     }
 
-    private static function assertInside(string $path, string $base): void
+    public static function assertInside(string $path, string $base): void
     {
         $path = rtrim(str_replace('\\', '/', $path), '/') . '/';
         $base = rtrim(str_replace('\\', '/', $base), '/') . '/';

@@ -41,6 +41,7 @@ header('Cache-Control: no-store');
             <button type="button" id="btn-redo" class="btn" disabled title="Rétablir (Ctrl+Y ou Ctrl+Maj+Z)">Rétablir</button>
             <button type="button" id="btn-save" class="btn btn-gold" disabled title="Enregistrer (Ctrl+S)">Enregistrer</button>
             <button type="button" id="btn-test" class="btn" disabled title="Tester la version en cours dans un nouvel onglet">Tester</button>
+            <button type="button" id="btn-characters" class="btn" title="Sprites, animations et voix des personnages">Personnages</button>
             <a class="btn btn-ghost" href="../" target="_blank" rel="noopener">Ouvrir le jeu</a>
             <a class="btn btn-ghost" href="/admin">Administration</a>
             <span class="user" title="Connecté"><?= e($session['email']) ?></span>
@@ -62,12 +63,14 @@ header('Cache-Control: no-store');
             <div class="tabs" role="tablist" aria-label="Vues de la scène">
                 <button type="button" role="tab" id="tab-visual" aria-controls="panel-visual" aria-selected="true">Visuel</button>
                 <button type="button" role="tab" id="tab-scene" aria-controls="panel-scene" aria-selected="false" tabindex="-1">Scène</button>
+                <button type="button" role="tab" id="tab-sounds" aria-controls="panel-sounds" aria-selected="false" tabindex="-1">Sons</button>
                 <button type="button" role="tab" id="tab-json" aria-controls="panel-json" aria-selected="false" tabindex="-1">JSON</button>
             </div>
             <section id="panel-visual" class="panel panel-visual" role="tabpanel" aria-labelledby="tab-visual">
                 <p class="empty">Choisissez une scène dans la liste.</p>
             </section>
             <section id="panel-scene" class="panel panel-scroll" role="tabpanel" aria-labelledby="tab-scene" hidden></section>
+            <section id="panel-sounds" class="panel panel-sounds" role="tabpanel" aria-labelledby="tab-sounds" hidden></section>
             <section id="panel-json" class="panel panel-json" role="tabpanel" aria-labelledby="tab-json" hidden></section>
             <details id="validation" class="validation">
                 <summary><span id="validation-summary">Vérifications</span></summary>

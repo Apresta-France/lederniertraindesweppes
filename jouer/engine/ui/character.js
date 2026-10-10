@@ -7,8 +7,8 @@ export class CharacterSprite {
     this.cur = -1;
     const now = performance.now();
     Object.assign(this, {
-      nextBlink: now + 1500 + Math.random() * 2000, blinkEnd: 0, hold: 0, lvl: 0, peak: 0, top: 0.02,
-      last: 0, nod: 0, tilt: 0, tiltTo: 0, nextTilt: 0, talkAmt: 0,
+      nextBlink: now + 1500 + Math.random() * 2000, blinkEnd: 0, hold: 0, lvl: 0, top: 0.02,
+      last: 0, tilt: 0, tiltTo: 0, nextTilt: 0, talkAmt: 0,
     });
   }
 
@@ -26,17 +26,19 @@ export class CharacterSprite {
       const raw = l >= 0 ? l : 0.05 + Math.random() * 0.1;
       this.lvl = this.lvl * 0.4 + raw * 0.6;
       // crête glissante : rend l'animation indépendante du volume du fichier
-      this.top = Math.max(0.01, raw > this.top ? this.top + (raw - this.top) * 0.5 : this.top * 0.995);
+      this.top = Math.max(0.01, raw > this.top ? this.top + (raw - this.top) * 0.5 : this.top * 0.99);
       const n = this.lvl / this.top;
       if (now >= this.hold) {
-        const k = n < 0.28 ? 0 : n < 0.75 ? 1 : this.last === 2 ? 1 : (Math.random() < 0.6 ? 2 : 1);
+        // la bouche ne garde jamais la même image ouverte deux fois de suite : elle doit se voir bouger
+        let k;
+        if (n < 0.12) k = 0;
+        else if (n < 0.45) k = this.last === 1 ? (Math.random() < 0.5 ? 0 : 2) : 1;
+        else k = this.last === 2 ? 1 : 2;
         this.setFrame(k);
         this.last = k;
-        this.hold = now + 120 + Math.random() * 80;
+        this.hold = now + 100 + Math.random() * 60;
       }
-      if (raw > this.peak * 1.6 && n > 0.85 && this.nod < 0.05) this.nod = 1;
-      this.peak = this.peak * 0.92 + raw * 0.08;
-      if (now >= this.nextTilt) { this.tiltTo = (Math.random() * 2 - 1) * 0.5; this.nextTilt = now + 1800 + Math.random() * 1800; }
+      if (now >= this.nextTilt) { this.tiltTo = (Math.random() * 2 - 1) * 0.3; this.nextTilt = now + 3000 + Math.random() * 2000; }
       if (now >= this.nextBlink && n < 0.2) { this.blinkEnd = now + 120; this.nextBlink = now + 2500 + Math.random() * 3000; }
       if (now < this.blinkEnd) this.setFrame(3);
     } else if (now < this.blinkEnd) {
@@ -50,10 +52,10 @@ export class CharacterSprite {
       }
     }
     this.talkAmt += ((talking ? 1 : 0) - this.talkAmt) * 0.04;
-    this.tilt += (this.tiltTo - this.tilt) * 0.025;
-    this.nod *= 0.94;
-    const breath = Math.sin(now / 1900) * 0.003;
-    const bob = Math.sin(now / 520) * 0.25 * this.talkAmt;
-    this.el.style.setProperty('--gt', `translateY(${(bob + this.nod * 0.7).toFixed(2)}px) rotate(${(this.tilt * this.talkAmt + this.nod * 0.25).toFixed(2)}deg) scaleY(${(1 + breath).toFixed(4)})`);
+    this.tilt += (this.tiltTo - this.tilt) * 0.012;
+    const phase = now / 1900;
+    const breath = Math.sin(phase) * 0.003;
+    const sway = Math.sin(phase - 0.8) * 0.15;
+    this.el.style.setProperty('--gt', `rotate(${(this.tilt * this.talkAmt + sway).toFixed(3)}deg) scaleY(${(1 + breath).toFixed(4)})`);
   }
 }

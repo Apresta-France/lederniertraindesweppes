@@ -98,4 +98,33 @@ export class Api {
     if (replace) form.append('replace', '1');
     return this.request('upload', { method: 'POST', form });
   }
+
+  characters() {
+    return this.request('characters');
+  }
+
+  character(id) {
+    return this.request('character', { query: { id } });
+  }
+
+  saveCharacter(id, character, rev, force = false) {
+    return this.request('character-save', { method: 'POST', json: { id, character, rev, force } });
+  }
+
+  createCharacter(id, name) {
+    return this.request('character-create', { method: 'POST', json: { id, name } });
+  }
+
+  registerCharacter(id) {
+    return this.request('character-register', { method: 'POST', json: { id } });
+  }
+
+  uploadCharacterFile(id, folder, file, replace = false) {
+    const form = new FormData();
+    form.append('id', id);
+    form.append('folder', folder);
+    form.append('file', file);
+    if (replace) form.append('replace', '1');
+    return this.request('character-upload', { method: 'POST', form });
+  }
 }

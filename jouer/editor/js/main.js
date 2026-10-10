@@ -5,10 +5,12 @@ import { SceneList } from './scene-list.js';
 import { Inspector } from './inspector.js';
 import { SceneProps } from './scene-props.js';
 import { JsonTab } from './json-tab.js';
+import { SoundsTab } from './sounds.js';
 import { ExploreEditor } from './explore-editor.js';
 import { CinematicEditor } from './cinematic-editor.js';
+import { CharacterEditor } from './character-editor.js';
 import { validateScene } from './validation.js';
-import { loadItems } from './data.js';
+import { forgetCharacter, loadItems } from './data.js';
 import { h, debounce, isFormField } from './dom.js';
 import { choiceDialog, confirmDialog, toast } from './ui.js';
 
@@ -29,10 +31,11 @@ const ui = {
   redo: $('btn-redo'),
   save: $('btn-save'),
   test: $('btn-test'),
+  characters: $('btn-characters'),
   banner: $('banner'),
   newScene: $('btn-new-scene'),
   tabs: [...document.querySelectorAll('[role="tab"]')],
-  panels: { visual: $('panel-visual'), scene: $('panel-scene'), json: $('panel-json') },
+  panels: { visual: $('panel-visual'), scene: $('panel-scene'), sounds: $('panel-sounds'), json: $('panel-json') },
   validation: $('validation'),
   validationSummary: $('validation-summary'),
   validationList: $('validation-list'),
@@ -61,7 +64,18 @@ const ctx = {
     .filter((s) => !s.missing && s.id !== store.id)
     .map((s) => [s.id, `${s.label || s.title || s.id} (${s.id})`]),
   resort: (index) => state.editor?.resort?.(index),
+  openCharacters: (id) => characterEditor.open(id),
 };
+
+const characterEditor = new CharacterEditor({
+  api,
+  getGame: () => state.list?.game,
+  onChange: (id) => {
+    forgetCharacter(id);
+    if (state.editorType === 'explore') mountEditor();
+    loadList({ quiet: true });
+  },
+});
 
 const sceneList = new SceneList({
   container: $('scene-list'),
@@ -72,6 +86,7 @@ const sceneList = new SceneList({
 new Inspector({ store, container: $('inspector'), ctx });
 new SceneProps({ store, container: ui.panels.scene, ctx });
 const jsonTab = new JsonTab({ store, container: ui.panels.json });
+const soundsTab = new SoundsTab({ store, container: ui.panels.sounds, library });
 
 function showBanner(kind, message, actions = [], tone = 'alert') {
   state.bannerKind = kind;
@@ -317,15 +332,33 @@ async function resolveConflict(data) {
   }
 }
 
-function testScene() {
+// Sans modification locale, on teste la dernière version enregistrée : le fichier a pu changer sur le disque.
+// L'onglet est ouvert avant l'attente réseau, sinon le navigateur le bloque.
+async function testScene() {
   if (!store.scene) return;
+  const id = store.id;
+  const tab = window.open('', '_blank');
+  if (!store.dirty) {
+    try {
+      const data = await api.scene(id);
+      if (store.id === id && !store.dirty && data.rev !== store.rev) {
+        loadIntoStore(id, data.scene, data.rev);
+        toast('La scène avait changé sur le disque : version à jour chargée.', 'info');
+      }
+    } catch {
+      // Hors ligne : on teste la version en mémoire.
+    }
+  }
   try {
-    localStorage.setItem(`ldtw_preview:${store.id}`, JSON.stringify(store.scene));
+    localStorage.setItem(`ldtw_preview:${id}`, JSON.stringify(store.scene));
   } catch {
+    tab?.close();
     toast('Impossible de stocker le brouillon dans le navigateur (stockage plein ?).', 'error');
     return;
   }
-  window.open(`../?scene=${encodeURIComponent(store.id)}&preview=1`, '_blank');
+  const url = `../?scene=${encodeURIComponent(id)}&preview=1`;
+  if (tab) tab.location.href = url;
+  else window.open(url, '_blank');
 }
 
 function loadAssetsForValidation() {
@@ -362,10 +395,20 @@ const runValidation = debounce(() => {
   ui.validationList.replaceChildren(...warnings.map((w) => {
     const icon = h('span', { class: `vl-icon vl-${w.level}`, 'aria-label': w.level === 'warn' ? 'Avertissement' : 'Remarque' }, w.level === 'warn' ? '⚠' : 'ℹ');
     return h('li', { class: `vl-${w.level}` }, w.selection
-      ? h('button', { type: 'button', class: 'vl-link', onclick: () => { selectTab('visual'); store.setSelection(w.selection); } }, icon, w.message)
+      ? h('button', { type: 'button', class: 'vl-link', onclick: () => openWarning(w) }, icon, w.message)
       : h('span', null, icon, w.message));
   }));
 }, 300);
+
+function openWarning(warning) {
+  if (warning.selection?.kind === 'sound') {
+    selectTab('sounds');
+    soundsTab.select(warning.selection.path);
+    return;
+  }
+  selectTab('visual');
+  store.setSelection(warning.selection);
+}
 
 function selectTab(name) {
   state.tab = name;
@@ -377,6 +420,8 @@ function selectTab(name) {
   for (const [key, panel] of Object.entries(ui.panels)) panel.hidden = key !== name;
   if (name === 'json') jsonTab.show();
   else jsonTab.hide();
+  if (name === 'sounds') soundsTab.show();
+  else soundsTab.hide();
 }
 
 ui.tabs.forEach((tab, index) => {
@@ -395,6 +440,7 @@ ui.undo.addEventListener('click', () => store.undo());
 ui.redo.addEventListener('click', () => store.redo());
 ui.save.addEventListener('click', () => save());
 ui.test.addEventListener('click', testScene);
+ui.characters.addEventListener('click', () => characterEditor.open());
 ui.newScene.addEventListener('click', () => sceneList.createScene());
 
 store.addEventListener('load', () => {

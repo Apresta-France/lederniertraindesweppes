@@ -6,6 +6,7 @@ require __DIR__ . '/lib/guard.php';
 require __DIR__ . '/lib/EditorException.php';
 require __DIR__ . '/lib/JsonFormatter.php';
 require __DIR__ . '/lib/SceneRepository.php';
+require __DIR__ . '/lib/CharacterRepository.php';
 
 header('Cache-Control: no-store');
 
@@ -66,6 +67,7 @@ function editor_flag(mixed $value): bool
 
 try {
     $repo = new SceneRepository(dirname(__DIR__));
+    $characters = new CharacterRepository(dirname(__DIR__));
     $user = $session['email'];
     $result = match ($method . ' ' . $action) {
         'GET list' => $repo->listAll($user),
@@ -91,6 +93,24 @@ try {
         })(),
         'POST unlock' => $repo->unlock(editor_string(editor_body()->id ?? null), $user),
         'POST upload' => $repo->upload(editor_string($_POST['id'] ?? null), $_FILES['file'] ?? null, editor_flag($_POST['replace'] ?? false)),
+        'GET characters' => $characters->listAll(),
+        'GET character' => $characters->read(editor_string($_GET['id'] ?? null)),
+        'POST character-save' => (static function () use ($characters, $user): array {
+            $body = editor_body();
+            $rev = $body->rev ?? null;
+            return $characters->save(editor_string($body->id ?? null), $body->character ?? null, is_string($rev) ? $rev : null, editor_flag($body->force ?? false), $user);
+        })(),
+        'POST character-create' => (static function () use ($characters): array {
+            $body = editor_body();
+            return $characters->create(editor_string($body->id ?? null), editor_string($body->name ?? null));
+        })(),
+        'POST character-register' => $characters->register(editor_string(editor_body()->id ?? null)),
+        'POST character-upload' => $characters->upload(
+            editor_string($_POST['id'] ?? null),
+            editor_string($_POST['folder'] ?? null),
+            $_FILES['file'] ?? null,
+            editor_flag($_POST['replace'] ?? false)
+        ),
         default => throw new EditorException('Action inconnue.', 404),
     };
     json_out($result);

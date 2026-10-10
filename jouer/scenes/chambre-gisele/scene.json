@@ -2,66 +2,193 @@
   "id": "chambre-gisele",
   "type": "explore",
   "title": "La chambre de Gisèle",
-  "meta": { "act": "Acte 1", "chapter": "Chapitre I", "notes": "Première scène jouable. La boîte en fer attend sa clé." },
-  "size": [1672, 941],
-  "background": { "src": "assets/fond.png", "alt": "Chambre de Gisèle, au soir. Un lit à gauche, une commode, une étagère avec la télévision, Gisèle assise dans son fauteuil près de la fenêtre, la porte du couloir à droite." },
-  "music": { "src": "@shared/audio/music/chambre_gisele.mp3", "fade": 2500 },
-  "objectives": {
-    "parler-gisele": "Parler à Gisèle",
-    "explorer": "Explorer la chambre de Gisèle"
+  "meta": {
+    "act": "Acte 1",
+    "chapter": "Chapitre I",
+    "notes": "Première scène jouable. La boîte en fer attend sa clé."
   },
+  "size": [1672, 941],
+  "background": {
+    "src": "assets/fond.png",
+    "alt": "Chambre de Gisèle, au soir. Un lit à gauche, une commode, une étagère avec la télévision, Gisèle assise dans son fauteuil près de la fenêtre, la porte du couloir à droite."
+  },
+  "music": { "src": "@shared/audio/music/chambre_gisele.mp3", "fade": 2500 },
+  "objectives": { "parler-gisele": "Parler à Gisèle", "explorer": "Explorer la chambre de Gisèle" },
   "onEnter": [
     { "do": "objective", "set": "parler-gisele", "once": true },
     { "do": "wait", "ms": 3000 },
-    { "do": "voice", "character": "gisele", "src": "assets/gisele_intro_chambre.mp3", "subtitle": "" }
+    {
+      "do": "voice",
+      "character": "gisele",
+      "src": "assets/gisele_intro_chambre.mp3",
+      "subtitle": ""
+    }
   ],
   "decor": [
-    { "id": "crepuscule", "type": "shape", "layer": "below", "rect": [1000, 0, 400, 941], "background": "linear-gradient(180deg,rgba(120,150,220,.12),transparent 70%)", "blend": "screen" },
+    {
+      "id": "crepuscule",
+      "type": "shape",
+      "layer": "below",
+      "rect": [1000, 0, 400, 941],
+      "background": "linear-gradient(180deg,rgba(120,150,220,.12),transparent 70%)",
+      "blend": "screen"
+    },
     { "type": "shadow", "center": [170, 676], "radius": [200, 62], "opacity": 0.55, "rotate": -21 },
     { "type": "shadow", "center": [150, 735], "radius": [70, 12], "opacity": 0.7 },
     { "type": "shadow", "center": [1272, 668], "radius": [165, 34], "opacity": 0.6 },
     { "type": "shadow", "center": [1272, 660], "radius": [130, 14], "opacity": 0.75 },
     { "type": "shadow", "center": [1208, 688], "radius": [74, 11], "opacity": 0.6 },
+    { "type": "shadow", "center": [1174, 685], "radius": [26, 6], "opacity": 0.8 },
+    { "type": "shadow", "center": [1211, 690], "radius": [27, 6], "opacity": 0.8 },
     { "type": "shadow", "center": [1440, 724], "radius": [68, 16], "opacity": 0.5 },
     { "type": "shadow", "center": [1440, 730], "radius": [40, 6], "opacity": 0.65 },
     { "type": "shadow", "center": [1540, 770], "radius": [50, 13], "opacity": 0.55 },
     { "type": "shadow", "center": [1540, 773], "radius": [26, 5], "opacity": 0.75 },
-    { "id": "tv-halo", "type": "shape", "rect": [703, 24, 317, 229], "background": "radial-gradient(ellipse 50% 50% at 50% 46%,rgba(150,190,255,.38),rgba(120,160,255,.12) 45%,transparent 72%)", "blend": "screen", "animation": "tv-flicker", "when": { "state": "tv", "ne": "off" } },
-    { "id": "tv-ecran", "type": "shape", "rect": [779, 80, 165, 98], "preset": "crt", "blend": "screen", "when": { "state": "tv", "ne": "off" } },
-    { "id": "tv-allumage", "type": "shape", "rect": [779, 80, 165, 98], "preset": "crt-on", "blend": "screen", "when": { "state": "tv", "ne": "off" } },
-    { "id": "lampe", "type": "shape", "rect": [115, 132, 520, 440], "background": "radial-gradient(ellipse 50% 50% at 50% 50%,rgba(255,190,110,.32),rgba(255,160,80,.08) 45%,transparent 70%)", "blend": "screen", "animation": "flicker" },
-    { "id": "voyant-appel", "type": "shape", "rect": [72, 300, 36, 36], "background": "radial-gradient(circle,rgba(255,60,40,.9),rgba(255,40,30,.25) 40%,transparent 70%)", "radius": "50%", "blend": "screen", "animation": "pulse", "when": { "state": "bouton", "eq": "allume" } },
-    { "type": "vignette", "background": "radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(10,6,2,.55) 100%)" }
+    {
+      "id": "tv-halo",
+      "type": "shape",
+      "rect": [703, 24, 317, 229],
+      "background": "radial-gradient(ellipse 50% 50% at 50% 46%,rgba(150,190,255,.38),rgba(120,160,255,.12) 45%,transparent 72%)",
+      "blend": "screen",
+      "animation": "tv-flicker",
+      "when": { "state": "tv", "ne": "off" }
+    },
+    {
+      "id": "tv-ecran",
+      "type": "shape",
+      "rect": [779, 80, 165, 98],
+      "preset": "crt",
+      "blend": "screen",
+      "when": { "state": "tv", "ne": "off" }
+    },
+    {
+      "id": "tv-allumage",
+      "type": "shape",
+      "rect": [779, 80, 165, 98],
+      "preset": "crt-on",
+      "blend": "screen",
+      "when": { "state": "tv", "ne": "off" }
+    },
+    {
+      "id": "lampe",
+      "type": "shape",
+      "rect": [115, 132, 520, 440],
+      "background": "radial-gradient(ellipse 50% 50% at 50% 50%,rgba(255,190,110,.32),rgba(255,160,80,.08) 45%,transparent 70%)",
+      "blend": "screen",
+      "animation": "flicker"
+    },
+    {
+      "id": "voyant-appel",
+      "type": "shape",
+      "rect": [72, 300, 36, 36],
+      "background": "radial-gradient(circle,rgba(255,60,40,.9),rgba(255,40,30,.25) 40%,transparent 70%)",
+      "radius": "50%",
+      "blend": "screen",
+      "animation": "pulse",
+      "when": { "state": "bouton", "eq": "allume" }
+    },
+    {
+      "type": "vignette",
+      "background": "radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(10,6,2,.55) 100%)"
+    }
   ],
   "objects": [
-    { "id": "fenetre", "name": "La fenêtre", "rect": [1060, 90, 230, 305], "sprite": "assets/fenetre_fermee.png", "description": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir.",
-      "onUse": [{ "do": "voice", "src": "assets/fenetre.mp3" }, { "do": "say", "text": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir." }] },
-    { "id": "lit", "name": "Le lit", "rect": [0, 346, 334, 401], "sprite": "assets/lit_fait.png", "description": "Le lit est fait au carré.",
-      "onUse": [{ "do": "voice", "src": "assets/lit.mp3" }, { "do": "say", "text": "Le lit est fait au carré." }] },
-    { "id": "fauteuil", "name": "Le fauteuil de Gisèle", "rect": [1120, 355, 320, 338], "sprite": "assets/fauteuil_vide.png", "description": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre.",
-      "onUse": [{ "do": "voice", "src": "assets/fauteuil.mp3" }, { "do": "say", "text": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre." }] },
     {
-      "id": "gisele", "name": "Gisèle", "rect": [1126, 346, 184, 351], "character": "gisele", "bubble": [1218, 330],
+      "id": "fenetre",
+      "name": "La fenêtre",
+      "rect": [1060, 90, 230, 305],
+      "sprite": "assets/fenetre_fermee.png",
+      "description": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir.",
+      "onUse": [
+        { "do": "voice", "src": "assets/fenetre.mp3" },
+        {
+          "do": "say",
+          "text": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir."
+        }
+      ]
+    },
+    {
+      "id": "lit",
+      "name": "Le lit",
+      "rect": [0, 346, 334, 401],
+      "sprite": "assets/lit_fait.png",
+      "description": "Le lit est fait au carré.",
+      "onUse": [
+        { "do": "voice", "src": "assets/lit.mp3" },
+        { "do": "say", "text": "Le lit est fait au carré." }
+      ]
+    },
+    {
+      "id": "fauteuil",
+      "name": "Le fauteuil de Gisèle",
+      "rect": [1120, 355, 320, 338],
+      "sprite": "assets/fauteuil_vide.png",
+      "description": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre.",
+      "onUse": [
+        { "do": "voice", "src": "assets/fauteuil.mp3" },
+        { "do": "say", "text": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre." }
+      ]
+    },
+    {
+      "id": "gisele",
+      "name": "Gisèle",
+      "rect": [1126, 346, 184, 351],
+      "character": "gisele",
+      "bubble": [1218, 330],
       "onUse": [
         { "do": "voice", "character": "gisele", "pool": "touch", "pick": "random" },
         { "do": "inc", "var": "chambre-gisele.conversations" },
         {
-          "do": "if", "cond": { "var": "chambre-gisele.conversations", "gte": 3 },
+          "do": "if",
+          "cond": { "var": "chambre-gisele.conversations", "gte": 3 },
           "then": [
             { "do": "objective", "set": "explorer", "complete": "parler-gisele" },
-            { "do": "note", "text": "Gisèle se souvient de la gare de Fournes. Le dernier train passait « au weppe »." }
+            {
+              "do": "note",
+              "text": "Gisèle se souvient de la gare de Fournes. Le dernier train passait « au weppe »."
+            }
           ]
         }
       ]
     },
-    { "id": "chevet", "name": "La table de chevet", "rect": [320, 416, 113, 186], "sprite": "assets/table_chevet.png", "description": "Une table de chevet en bois, à portée de main du lit.",
-      "onUse": [{ "do": "voice", "src": "assets/table_chevet.mp3" }, { "do": "say", "text": "Une table de chevet en bois, à portée de main du lit." }] },
-    { "id": "lampe", "name": "La lampe de chevet", "rect": [337, 321, 78, 105], "sprite": "assets/lampe_chevet.png", "description": "La lampe est restée allumée. Elle éclaire doucement la chambre.",
-      "onUse": [{ "do": "voice", "src": "assets/lampe.mp3" }, { "do": "say", "text": "La lampe est restée allumée. Elle éclaire doucement la chambre." }] },
-    { "id": "pilulier", "name": "Le pilulier", "rect": [342, 417, 52, 16], "sprite": "assets/pilulier.png", "description": "Un pilulier, un compartiment par jour de la semaine.",
-      "onUse": [{ "do": "voice", "src": "assets/pilulier.mp3" }, { "do": "say", "text": "Un pilulier, un compartiment par jour de la semaine." }] },
     {
-      "id": "lunettes", "name": "Les lunettes", "rect": [321, 417, 29, 16], "sprite": "@shared/items/lunettes.png",
+      "id": "chevet",
+      "name": "La table de chevet",
+      "rect": [320, 416, 113, 186],
+      "sprite": "assets/table_chevet.png",
+      "description": "Une table de chevet en bois, à portée de main du lit.",
+      "onUse": [
+        { "do": "voice", "src": "assets/table_chevet.mp3" },
+        { "do": "say", "text": "Une table de chevet en bois, à portée de main du lit." }
+      ]
+    },
+    {
+      "id": "lampe",
+      "name": "La lampe de chevet",
+      "rect": [337, 321, 78, 105],
+      "sprite": "assets/lampe_chevet.png",
+      "description": "La lampe est restée allumée. Elle éclaire doucement la chambre.",
+      "onUse": [
+        { "do": "voice", "src": "assets/lampe.mp3" },
+        { "do": "say", "text": "La lampe est restée allumée. Elle éclaire doucement la chambre." }
+      ]
+    },
+    {
+      "id": "pilulier",
+      "name": "Le pilulier",
+      "rect": [342, 417, 52, 16],
+      "sprite": "assets/pilulier.png",
+      "description": "Un pilulier, un compartiment par jour de la semaine.",
+      "onUse": [
+        { "do": "voice", "src": "assets/pilulier.mp3" },
+        { "do": "say", "text": "Un pilulier, un compartiment par jour de la semaine." }
+      ]
+    },
+    {
+      "id": "lunettes",
+      "name": "Les lunettes",
+      "rect": [321, 417, 29, 16],
+      "sprite": "@shared/items/lunettes.png",
       "description": "Les lunettes de Gisèle, posées sur la table de chevet.",
       "onUse": [
         { "do": "sfx", "name": "ding" },
@@ -70,60 +197,248 @@
       ]
     },
     {
-      "id": "tv", "name": "La télévision", "rect": [773, 74, 177, 119], "state": "off",
+      "id": "tv",
+      "name": "La télévision",
+      "rect": [773, 74, 177, 119],
+      "state": "off",
       "states": {
         "off": { "sprite": "assets/television_eteinte.png" },
-        "journal": { "sprite": "assets/tv_journal.png", "sound": { "src": "assets/son_TV.mp3", "onEnded": [{ "do": "setState", "object": "tv", "state": "off" }, { "do": "sfx", "name": "click" }] } },
-        "gare": { "sprite": "assets/tv_gare.png", "sound": { "src": "assets/son_TV.mp3", "onEnded": [{ "do": "setState", "object": "tv", "state": "off" }, { "do": "sfx", "name": "click" }] } }
+        "journal": {
+          "sprite": "assets/tv_journal.png",
+          "sound": {
+            "src": "assets/son_TV.mp3",
+            "onEnded": [
+              { "do": "setState", "object": "tv", "state": "off" },
+              { "do": "sfx", "name": "click" }
+            ]
+          }
+        },
+        "gare": {
+          "sprite": "assets/tv_gare.png",
+          "sound": {
+            "src": "assets/son_TV.mp3",
+            "onEnded": [
+              { "do": "setState", "object": "tv", "state": "off" },
+              { "do": "sfx", "name": "click" }
+            ]
+          }
+        }
       },
       "onUse": [
         { "do": "cycleState", "object": "tv", "states": ["off", "journal", "gare"] },
         { "do": "sfx", "name": "click" },
-        { "do": "say", "byState": "tv", "texts": {
-          "off": "La télévision est éteinte.",
-          "journal": "Le journal régional. La présentatrice parle d'un orage dans les Weppes.",
-          "gare": "« … l'ancienne gare de Fournes-en-Weppes s'est effondrée cette nuit. »"
-        } }
+        {
+          "do": "say",
+          "byState": "tv",
+          "texts": {
+            "off": "La télévision est éteinte.",
+            "journal": "Le journal régional. La présentatrice parle d'un orage dans les Weppes.",
+            "gare": "« … l'ancienne gare de Fournes-en-Weppes s'est effondrée cette nuit. »"
+          }
+        }
       ]
     },
-    { "id": "cadre", "name": "La photo", "rect": [454, 351, 64, 63], "sprite": "assets/cadre_photo.png", "description": "Une jeune femme pose devant un moulin. Au dos, une écriture fine : « Rose ».",
-      "onUse": [{ "do": "voice", "src": "assets/photo.mp3" }, { "do": "say", "text": "Une jeune femme pose devant un moulin. Au dos, une écriture fine : « Rose »." }] },
     {
-      "id": "boite", "name": "La boîte en fer", "rect": [687, 161, 64, 40], "state": "fermee",
-      "states": { "fermee": { "sprite": "assets/boite_fer_fermee.png" }, "ouverte": { "sprite": "assets/boite_fer_fermee.png" } },
+      "id": "cadre",
+      "name": "La photo",
+      "rect": [454, 351, 64, 63],
+      "sprite": "assets/cadre_photo.png",
+      "description": "Une jeune femme pose devant un moulin. Au dos, une écriture fine : « Rose ».",
+      "onUse": [
+        { "do": "voice", "src": "assets/photo.mp3" },
+        {
+          "do": "say",
+          "text": "Une jeune femme pose devant un moulin. Au dos, une écriture fine : « Rose »."
+        }
+      ]
+    },
+    {
+      "id": "boite",
+      "name": "La boîte en fer",
+      "rect": [687, 161, 64, 40],
+      "state": "fermee",
+      "states": {
+        "fermee": { "sprite": "assets/boite_fer_fermee.png" },
+        "ouverte": { "sprite": "assets/boite_fer_fermee.png" }
+      },
       "description": "Une boîte en fer peinte de fleurs. Un petit cadenas la tient fermée.",
       "onUse": [{ "do": "voice", "src": "assets/boite.mp3" }, { "do": "examine", "panel": "boite" }]
     },
-    { "id": "horloge", "name": "L'horloge", "rect": [538, 94, 97, 100], "sprite": "assets/horloge_murale.png", "description": "L'horloge s'est arrêtée.",
-      "onUse": [{ "do": "voice", "src": "assets/horloge.mp3" }, { "do": "say", "text": "L'horloge s'est arrêtée." }] },
-    { "id": "calendrier", "name": "Le calendrier", "rect": [831, 198, 112, 161], "sprite": "assets/calendrier.png", "description": "Novembre 2026.",
-      "onUse": [{ "do": "voice", "src": "assets/calendrier.mp3" }, { "do": "say", "text": "Novembre 2026." }] },
-    { "id": "tableau", "name": "Le tableau des Charmilles", "rect": [601, 250, 211, 143], "sprite": "assets/tableau_affichage.png", "description": "Les Charmilles. Le menu et les animations de la semaine.",
-      "onUse": [{ "do": "voice", "src": "assets/tableau.mp3" }, { "do": "say", "text": "Les Charmilles. Le menu et les animations de la semaine." }] },
     {
-      "id": "bouton", "name": "Le bouton d'appel", "rect": [72, 298, 35, 103], "state": "eteint",
-      "states": { "eteint": { "sprite": "assets/bouton_appel.png" }, "allume": { "sprite": "assets/bouton_appel.png" } },
+      "id": "horloge",
+      "name": "L'horloge",
+      "rect": [538, 94, 97, 100],
+      "sprite": "assets/horloge_murale.png",
+      "description": "L'horloge s'est arrêtée.",
       "onUse": [
-        { "do": "cycleState", "object": "bouton", "states": ["eteint", "allume"] },
-        { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [{ "do": "sfx", "src": "assets/sonette.wav" }], "else": [{ "do": "sfx", "name": "click" }] },
-        { "do": "say", "byState": "bouton", "texts": {
-          "eteint": "Le bouton d'appel. Le voyant est éteint.",
-          "allume": "Le voyant rouge s'allume. Quelqu'un devrait venir."
-        } },
-        { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [
-          { "do": "wait", "ms": 2000 },
-          { "do": "if", "cond": { "state": "bouton", "eq": "allume" }, "then": [{ "do": "voice", "src": "assets/jarrive_gisele.mp3" }] }
-        ] }
+        { "do": "voice", "src": "assets/horloge.mp3" },
+        { "do": "say", "text": "L'horloge s'est arrêtée." }
       ]
     },
-    { "id": "deambulateur", "name": "Le déambulateur", "rect": [1393, 429, 114, 308], "sprite": "assets/deambulateur.png", "description": "Le déambulateur de Gisèle, rangé près du fauteuil.",
-      "onUse": [{ "do": "voice", "src": "assets/deambulateur.mp3" }, { "do": "say", "text": "Le déambulateur de Gisèle, rangé près du fauteuil." }] },
-    { "id": "plante", "name": "La plante", "rect": [1486, 562, 100, 214], "sprite": "assets/plante_sol.png", "description": "Quelqu'un l'arrose régulièrement.",
-      "onUse": [{ "do": "voice", "src": "assets/plante.mp3" }, { "do": "say", "text": "Quelqu'un l'arrose régulièrement." }] },
-    { "id": "porte", "name": "La porte du couloir", "rect": [1538, 0, 134, 941], "sprite": "assets/porte_ouverte.png", "description": "La porte est ouverte sur le couloir de la résidence.",
-      "onUse": [{ "do": "voice", "src": "assets/porte.mp3" }, { "do": "say", "text": "La porte est ouverte sur le couloir de la résidence." }] },
-    { "id": "commode", "name": "La commode", "rect": [440, 408, 252, 190], "description": "Une commode en bois ciré, un napperon de dentelle.",
-      "onUse": [{ "do": "voice", "src": "assets/commode.mp3" }, { "do": "say", "text": "Une commode en bois ciré, un napperon de dentelle." }] }
+    {
+      "id": "calendrier",
+      "name": "Le calendrier",
+      "rect": [831, 198, 112, 161],
+      "sprite": "assets/calendrier.png",
+      "description": "Novembre 2026.",
+      "onUse": [
+        { "do": "voice", "src": "assets/calendrier.mp3" },
+        { "do": "say", "text": "Novembre 2026." }
+      ]
+    },
+    {
+      "id": "tableau",
+      "name": "Le tableau des Charmilles",
+      "rect": [601, 250, 211, 143],
+      "sprite": "assets/tableau_affichage.png",
+      "description": "Les Charmilles. Le menu et les animations de la semaine.",
+      "onUse": [
+        { "do": "voice", "src": "assets/tableau.mp3" },
+        { "do": "say", "text": "Les Charmilles. Le menu et les animations de la semaine." }
+      ]
+    },
+    {
+      "id": "bouton",
+      "name": "Le bouton d'appel",
+      "rect": [72, 298, 35, 103],
+      "state": "eteint",
+      "states": {
+        "eteint": { "sprite": "assets/bouton_appel.png" },
+        "allume": { "sprite": "assets/bouton_appel.png" }
+      },
+      "onUse": [
+        {
+          "do": "if",
+          "cond": { "var": "chambre-gisele.sandrine" },
+          "then": [
+            { "do": "sfx", "name": "soft" },
+            { "do": "say", "text": "Sandrine est déjà venue. Inutile de la déranger à nouveau." }
+          ],
+          "else": [
+            { "do": "cycleState", "object": "bouton", "states": ["eteint", "allume"] },
+            {
+              "do": "if",
+              "cond": { "state": "bouton", "eq": "allume" },
+              "then": [{ "do": "sfx", "src": "assets/sonette.wav" }],
+              "else": [{ "do": "sfx", "name": "click" }]
+            },
+            {
+              "do": "say",
+              "byState": "bouton",
+              "texts": {
+                "eteint": "Le bouton d'appel. Le voyant est éteint.",
+                "allume": "Le voyant rouge s'allume. Quelqu'un devrait venir."
+              }
+            },
+            {
+              "do": "if",
+              "cond": { "state": "bouton", "eq": "allume" },
+              "then": [
+                { "do": "wait", "ms": 2000 },
+                {
+                  "do": "if",
+                  "cond": { "state": "bouton", "eq": "allume" },
+                  "then": [
+                    { "do": "voice", "src": "assets/jarrive_gisele.mp3", "wait": true },
+                    { "do": "sfx", "src": "assets/pas_sandrine.mp3", "duration": 2500 },
+                    { "do": "wait", "ms": 2000 },
+                    { "do": "setState", "object": "porte", "state": "ouverte" },
+                    { "do": "show", "object": "sandrine" },
+                    { "do": "set", "var": "chambre-gisele.sandrine", "value": true },
+                    { "do": "voice", "src": "assets/je_suis_la.mp3", "wait": true },
+                    { "do": "wait", "ms": 500 },
+                    {
+                      "do": "voice",
+                      "character": "gisele",
+                      "src": "assets/aurelie_arrive_quand.mp3",
+                      "wait": true
+                    },
+                    { "do": "wait", "ms": 500 },
+                    { "do": "voice", "src": "assets/elle_arrive_bientot.mp3", "wait": true },
+                    { "do": "wait", "ms": 500 },
+                    {
+                      "do": "voice",
+                      "character": "gisele",
+                      "src": "assets/ah_merci.mp3",
+                      "wait": true
+                    },
+                    { "do": "wait", "ms": 500 },
+                    { "do": "sfx", "src": "assets/pas_sandrine.mp3", "duration": 2500 },
+                    { "do": "hide", "object": "sandrine" },
+                    { "do": "setState", "object": "bouton", "state": "eteint" },
+                    { "do": "wait", "ms": 1500 },
+                    { "do": "setState", "object": "porte", "state": "fermee" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deambulateur",
+      "name": "Le déambulateur",
+      "rect": [1393, 429, 114, 308],
+      "sprite": "assets/deambulateur.png",
+      "description": "Le déambulateur de Gisèle, rangé près du fauteuil.",
+      "onUse": [
+        { "do": "voice", "src": "assets/deambulateur.mp3" },
+        { "do": "say", "text": "Le déambulateur de Gisèle, rangé près du fauteuil." }
+      ]
+    },
+    {
+      "id": "plante",
+      "name": "La plante",
+      "rect": [1486, 562, 100, 214],
+      "sprite": "assets/plante_sol.png",
+      "description": "Quelqu'un l'arrose régulièrement.",
+      "onUse": [
+        { "do": "voice", "src": "assets/plante.mp3" },
+        { "do": "say", "text": "Quelqu'un l'arrose régulièrement." }
+      ]
+    },
+    {
+      "id": "sandrine",
+      "name": "Sandrine",
+      "rect": [1003, 483, 460, 454],
+      "sprite": "assets/sandrine_porte.png",
+      "hidden": true
+    },
+    {
+      "id": "porte",
+      "name": "La porte du couloir",
+      "rect": [1316, 0, 356, 941],
+      "state": "fermee",
+      "states": {
+        "fermee": { "sprite": "assets/porte_fermee.png" },
+        "ouverte": { "sprite": "assets/porte_ouverte.png" }
+      },
+      "onUse": [
+        {
+          "do": "if",
+          "cond": { "state": "porte", "eq": "ouverte" },
+          "then": [
+            { "do": "voice", "src": "assets/porte.mp3" },
+            { "do": "say", "text": "La porte est ouverte sur le couloir de la résidence." }
+          ],
+          "else": [
+            { "do": "sfx", "name": "soft" },
+            { "do": "say", "text": "La porte du couloir est fermée." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "commode",
+      "name": "La commode",
+      "rect": [440, 408, 252, 190],
+      "description": "Une commode en bois ciré, un napperon de dentelle.",
+      "onUse": [
+        { "do": "voice", "src": "assets/commode.mp3" },
+        { "do": "say", "text": "Une commode en bois ciré, un napperon de dentelle." }
+      ]
+    }
   ],
   "panels": {
     "boite": {
@@ -143,11 +458,15 @@
       ],
       "actions": [
         {
-          "label": "Essayer d'ouvrir", "when": { "state": "boite", "ne": "ouverte" },
+          "label": "Essayer d'ouvrir",
+          "when": { "state": "boite", "ne": "ouverte" },
           "do": [
             { "do": "sfx", "name": "click" },
             { "do": "panelNote", "text": "Le cadenas tient bon. Il faudrait trouver la clé." },
-            { "do": "note", "text": "La boîte en fer de l'étagère est fermée par un cadenas. Trouver la clé." }
+            {
+              "do": "note",
+              "text": "La boîte en fer de l'étagère est fermée par un cadenas. Trouver la clé."
+            }
           ]
         },
         { "label": "Reposer", "style": "ghost", "do": [{ "do": "close" }] }

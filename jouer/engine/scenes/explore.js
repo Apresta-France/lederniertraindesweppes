@@ -53,6 +53,8 @@ export class ExploreScene extends Scene {
     this.masks = new Map();
     this.sounds = {};
     this.sprites = {};
+    this.anims = {};
+    this.livePos = {};
     this.hot = null;
     this.speaking = null;
     this.lastPick = {};
@@ -96,8 +98,9 @@ export class ExploreScene extends Scene {
       if (o.sprite) urls.push(this.url(o.sprite));
       Object.values(o.states || {}).forEach(s => s.sprite && urls.push(this.url(s.sprite)));
       if (o.character) {
-        const sp = this.character(o.character)?.sprites || {};
+        const c = this.character(o.character), sp = c?.sprites || {};
         [sp.idle, ...(sp.talk || []), sp.blink].forEach(p => p && urls.push(this.characterUrl(o.character, p)));
+        Object.values(c?.animations || {}).forEach(a => (a?.frames || []).forEach(p => p && urls.push(this.characterUrl(o.character, p))));
       }
     }
     return urls;
@@ -135,17 +138,22 @@ export class ExploreScene extends Scene {
 
   objectHtml(o) {
     const hidden = this.isHidden(o.id) ? ' is-hidden' : '';
+    const style = `${this.box(this.rectOf(o))}${this.saved(o.id).flip ? ';--flip:-1' : ''}`;
     if (o.character) {
       const c = this.character(o.character);
       const sp = c?.sprites || {};
+      const img = p => `<img src="${esc(this.characterUrl(o.character, p))}" alt="" draggable="false">`;
       const frames = [sp.idle, sp.talk?.[0], sp.talk?.[1], sp.blink]
-        .map((p, i) => p ? `<img class="room-frame-img${i === 0 ? ' on' : ''}" src="${esc(this.characterUrl(o.character, p))}" alt="" draggable="false">` : '<i></i>')
+        .map((p, i) => p ? img(p).replace('<img ', `<img class="room-frame-img${i === 0 ? ' on' : ''}" `) : '<i></i>')
         .join('');
-      return `<div class="room-obj room-char${hidden}" data-id="${esc(o.id)}" style="${this.box(o.rect)}">${frames}</div>`;
+      const anims = Object.entries(c?.animations || {})
+        .map(([name, a]) => `<div class="room-anim" data-anim="${esc(name)}">${(a?.frames || []).map(p => p ? img(p) : '<i></i>').join('')}</div>`)
+        .join('');
+      return `<div class="room-obj room-char${hidden}" data-id="${esc(o.id)}" style="${style}">${frames}${anims}</div>`;
     }
     const src = this.spriteOf(o);
-    if (!src) return `<div class="room-zone${hidden}" data-id="${esc(o.id)}" style="${this.box(o.rect)}"></div>`;
-    return `<img class="room-obj${hidden}" data-id="${esc(o.id)}" src="${esc(src)}" alt="" draggable="false" style="${this.box(o.rect)}">`;
+    if (!src) return `<div class="room-zone${hidden}" data-id="${esc(o.id)}" style="${style}"></div>`;
+    return `<img class="room-obj${hidden}" data-id="${esc(o.id)}" src="${esc(src)}" alt="" draggable="false" style="${style}">`;
   }
 
   render() {
@@ -161,7 +169,7 @@ export class ExploreScene extends Scene {
         ${this.objects.map(o => this.objectHtml(o)).join('')}
         ${above.map(([x, i]) => this.decorHtml(x, i)).join('')}
         <div class="room-hotspots" role="group" aria-label="Objets de la scène : ${esc(d.title)}">
-          ${order.map(o => `<button type="button" class="room-hotspot" data-id="${esc(o.id)}" style="${this.box(o.rect)}" aria-label="${esc(o.name)}"${this.isHidden(o.id) ? ' hidden' : ''}></button>`).join('')}
+          ${order.map(o => `<button type="button" class="room-hotspot" data-id="${esc(o.id)}" style="${this.box(this.rectOf(o))}" aria-label="${esc(o.name)}"${this.isHidden(o.id) ? ' hidden' : ''}></button>`).join('')}
         </div>
         <div class="room-hud-tl" aria-hidden="true">
           <div class="room-pill room-place">${esc(d.title)}</div>
@@ -176,8 +184,7 @@ export class ExploreScene extends Scene {
         </div>
         <div class="room-ov room-ui" hidden><div class="room-card" role="dialog" aria-modal="true"></div></div>
         <div class="room-talk" aria-hidden="true"><span></span><i></i><i></i><i></i></div>
-        <div class="room-say" aria-hidden="true"><span class="who"></span><span class="txt"></span></div>
-        <div class="room-tip" aria-hidden="true"></div>
+        <div class="room-say" aria-hidden="true"><span class="who"></span><span class="txt"></span></div>        <div class="room-tip" aria-hidden="true"></div>
         <div class="room-dbgxy" aria-hidden="true"></div>
       </div>`;
 
@@ -192,7 +199,7 @@ export class ExploreScene extends Scene {
 
     for (const o of this.objects) {
       const el = this.els[o.id];
-      if (o.character && el) this.sprites[o.id] = new CharacterSprite(el, [...el.children]);
+      if (o.character && el) this.sprites[o.id] = new CharacterSprite(el, [...el.children].slice(0, 4));
       this.updateMask(o);
     }
     this.notesSeen = this.game.state.data.notes.length;
@@ -258,13 +265,17 @@ export class ExploreScene extends Scene {
     this.applyDebug();
     if (matchMedia('(hover: none)').matches) this.frame.classList.add('touch');
 
+    for (const o of this.objects) if (o.animation) this.animate({ object: o.id, animation: o.animation });
+
     const loop = now => {
       for (const [id, sp] of Object.entries(this.sprites)) sp.update(now, this.speaking?.objectId === id ? this.speaking.handle : null);
+      this.tickAnims(now);
       this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
     this.onDispose(() => {
       cancelAnimationFrame(this.raf);
+      Object.values(this.anims).forEach(st => st.done());
       Object.values(this.sounds).forEach(h => h.stop());
       this.speaking?.handle.stop();
     });
@@ -286,14 +297,14 @@ export class ExploreScene extends Scene {
   }
 
   hit(px, py) {
-    const inRect = (o, [x, y, w, h] = o.rect) => px >= x && py >= y && px < x + w && py < y + h;
+    const inRect = (o, [x, y, w, h] = this.rectOf(o)) => px >= x && py >= y && px < x + w && py < y + h;
     const drawn = this.objects.filter(o => this.spriteOf(o) && o.hit !== 'rect');
     for (let i = drawn.length - 1; i >= 0; i--) {
       const o = drawn[i];
       if (this.isHidden(o.id) || !inRect(o)) continue;
       const m = this.masks.get(o.id);
       if (!m) return o.id;
-      const [x, y, w] = o.rect.map(Math.round);
+      const [x, y, w] = this.rectOf(o).map(Math.round);
       if (m[((Math.floor(py - y) * w) + Math.floor(px - x)) * 4 + 3] > 40) return o.id;
     }
     const zones = this.objects.filter(o => !this.spriteOf(o) || o.hit === 'rect');
@@ -353,7 +364,7 @@ export class ExploreScene extends Scene {
 
   showTipFor(id) {
     const o = this.defs.get(id), fr = this.frame.getBoundingClientRect();
-    const [x, y, w] = o.rect;
+    const [x, y, w] = this.rectOf(o);
     this.placeTip(o.name, (x + w / 2) / this.W * fr.width, y / this.H * fr.height + 8);
   }
 
@@ -393,6 +404,7 @@ export class ExploreScene extends Scene {
   }
 
   playStateSound(id, state, snd) {
+    this.showSoundLegend(snd.src);
     this.sounds[id] = this.game.audio.playSample(this.url(snd.src), {
       loop: !!snd.loop,
       onEnded: () => {
@@ -424,6 +436,119 @@ export class ExploreScene extends Scene {
     (list[i + 1] || list[i - 1])?.focus();
   }
 
+  // ---- Animations (character.json › animations) et déplacements ----
+
+  // Rectangle courant : la position déplacée (sauvegardée, ou en cours de trajet) remplace x, y.
+  rectOf(o) {
+    const p = this.livePos[o.id] ?? this.saved(o.id).pos;
+    return Array.isArray(p) ? [p[0], p[1], o.rect[2], o.rect[3]] : o.rect;
+  }
+
+  placeObject(id) {
+    const [x, y] = this.rectOf(this.defs.get(id));
+    for (const el of [this.els[id], this.hotspots.find(h => h.dataset.id === id)]) {
+      if (!el) continue;
+      el.style.left = this.pct(x, this.W);
+      el.style.top = this.pct(y, this.H);
+    }
+  }
+
+  moveTo(id, [x, y]) {
+    delete this.livePos[id];
+    this.game.state.setObject(this.id, id, { pos: [Math.round(x), Math.round(y)] });
+    this.placeObject(id);
+  }
+
+  // animate { object, animation?, to?: [x, y], duration?, speed?, flip?, hold?, keep?, wait? }
+  // Sans durée ni trajet, une animation en boucle tourne jusqu'au prochain animate sur l'objet.
+  // Pendant une réplique, un personnage immobile reprend ses images de parole.
+  animate(a, ctx = {}) {
+    const id = a.object ?? ctx.object?.id;
+    const def = this.defs.get(id), el = this.els[id];
+    if (!def || !el) return;
+    this.endAnim(id);
+    el.classList.remove('animating');
+    el.querySelectorAll('.room-anim.cur, .room-anim > .on').forEach(x => x.classList.remove('cur', 'on'));
+    if (typeof a.flip === 'boolean') {
+      this.game.state.setObject(this.id, id, { flip: a.flip });
+      el.style.setProperty('--flip', a.flip ? -1 : 1);
+    }
+
+    const name = a.animation;
+    const anim = name && def.character ? this.character(def.character)?.animations?.[name] : null;
+    if (name && !anim) console.warn(`[animate] animation « ${name} » introuvable pour « ${id} »`);
+    const layer = anim ? [...el.querySelectorAll('.room-anim')].find(x => x.dataset.anim === name) : null;
+    const frames = layer ? [...layer.children] : [];
+    const fps = anim?.fps > 0 ? anim.fps : 8;
+    const loop = anim?.loop !== false;
+    const from = this.rectOf(def);
+    const to = Array.isArray(a.to) && a.to.length >= 2 ? a.to : null;
+
+    if (this.reduceMotion || (!frames.length && !to)) {
+      if (to) this.moveTo(id, to);
+      return;
+    }
+    const moveMs = to ? Math.max(0, a.duration ?? Math.hypot(to[0] - from[0], to[1] - from[1]) / (a.speed ?? 200) * 1000) : 0;
+    const playMs = to ? (a.keep ? Infinity : moveMs)
+      : a.duration != null ? a.duration
+        : loop ? Infinity : frames.length * 1000 / fps;
+    let resolve;
+    const finished = new Promise(res => { resolve = res; });
+    const start = performance.now();
+    this.anims[id] = {
+      id, el, layer, frames, fps, loop, from, to, moveMs, cur: -1,
+      start, end: start + playMs, hold: !!a.hold,
+      done: () => { resolve(); },
+    };
+    if (layer) {
+      layer.classList.add('cur');
+      el.classList.add('animating');
+    }
+    if (a.wait && (Number.isFinite(playMs) || to)) return finished;
+  }
+
+  tickAnims(now) {
+    for (const st of Object.values(this.anims)) {
+      const t = now - st.start;
+      if (st.to) {
+        const k = st.moveMs ? Math.min(1, t / st.moveMs) : 1;
+        this.livePos[st.id] = [st.from[0] + (st.to[0] - st.from[0]) * k, st.from[1] + (st.to[1] - st.from[1]) * k];
+        this.placeObject(st.id);
+        if (k >= 1) {
+          this.moveTo(st.id, st.to);
+          st.to = null;
+          st.done();
+        }
+      }
+      if (st.frames.length) {
+        const n = Math.floor(t * st.fps / 1000);
+        const i = st.loop ? n % st.frames.length : Math.min(n, st.frames.length - 1);
+        if (i !== st.cur) {
+          st.frames[st.cur]?.classList.remove('on');
+          st.frames[i].classList.add('on');
+          st.cur = i;
+        }
+        const talking = this.speaking?.objectId === st.id && !st.to;
+        st.el.classList.toggle('animating', !talking);
+      }
+      if (now >= st.end) this.endAnim(st.id, true);
+    }
+  }
+
+  // natural : fin prévue (hold garde alors la dernière image) ; sinon interruption par un autre animate.
+  endAnim(id, natural = false) {
+    const st = this.anims[id];
+    if (!st) return;
+    delete this.anims[id];
+    if (st.to) this.moveTo(id, this.livePos[id] ?? st.from);
+    if (!(natural && st.hold)) {
+      st.el.classList.remove('animating');
+      st.layer?.classList.remove('cur');
+      st.frames.forEach(f => f.classList.remove('on'));
+    }
+    st.done();
+  }
+
   say(who, text) {
     const s = this.el.querySelector('.room-say');
     clearTimeout(this.sayT);
@@ -442,10 +567,51 @@ export class ExploreScene extends Scene {
     this.el.querySelector('.room-say').classList.remove('on');
   }
 
-  // Voix : { character, src | pool (+ pick), subtitle }. La bouche du personnage suit le son.
+  // Légende d'un fichier (sounds[src].caption), ou le sous-titre écrit sur l'action s'il y en a un.
+  legendFor(src, explicit = '') {
+    if (typeof explicit === 'string' && explicit.trim()) return explicit.trim();
+    const entry = src && this.data.sounds?.[src];
+    return entry && typeof entry.caption === 'string' ? entry.caption.trim() : '';
+  }
+
+  // Bandeau du bas, pour les personnes malentendantes. hold : reste jusqu'à hideLegend (fin du son).
+  showLegend(who, text, { hold = false } = {}) {
+    const el = this.el.querySelector('.room-sub');
+    if (!el || !text) return 0;
+    clearTimeout(this.legendT);
+    this.legendToken = (this.legendToken || 0) + 1;
+    const token = this.legendToken;
+    el.querySelector('.who').textContent = who || '';
+    el.querySelector('.txt').textContent = text;
+    el.classList.add('on');
+    this.announce(who ? `${who} : ${text}` : text);
+    if (!hold) {
+      this.legendT = this.later(() => {
+        if (this.legendToken === token) el.classList.remove('on');
+      }, 2600 + text.length * 45);
+    }
+    return token;
+  }
+
+  hideLegend() {
+    clearTimeout(this.legendT);
+    this.legendToken = (this.legendToken || 0) + 1;
+    this.el.querySelector('.room-sub')?.classList.remove('on');
+  }
+
+  showSoundLegend(src) {
+    const text = this.legendFor(src);
+    if (text) this.showLegend('', text);
+  }
+
+  // Voix : { character, src | pool (+ pick), subtitle, wait }. La bouche du personnage suit le son.
+  // Avec wait, l'action suivante attend la fin de la réplique (ou son interruption).
+  // La légende (onglet Sons, ou subtitle) reste affichée le temps du son, même si la voix est coupée.
   speak(a) {
     const audio = this.game.audio;
-    let src = a.src ? this.url(a.src) : '', subtitle = a.subtitle;
+    let file = a.src || '';
+    let src = file ? this.url(file) : '';
+    let explicit = a.subtitle;
     const c = a.character ? this.character(a.character) : null;
     if (!src && c && a.pool) {
       const pool = c.voice?.[a.pool] || [];
@@ -456,27 +622,42 @@ export class ExploreScene extends Scene {
         do { n = Math.floor(Math.random() * pool.length); } while (n === this.lastPick[key]);
       }
       this.lastPick[key] = n;
+      file = '';
       src = this.characterUrl(a.character, pool[n].src);
-      subtitle ??= pool[n].subtitle;
+      if (typeof explicit !== 'string' || !explicit.trim()) explicit = pool[n].subtitle;
     }
-    if (!src) return;
+    const legend = this.legendFor(file, explicit);
+    const who = c?.name || '';
+    if (!src) {
+      if (legend) this.showLegend(who, legend);
+      return;
+    }
     this.speaking?.handle.stop();
-    if (!audio.volume('voice')) return;
+    if (!audio.volume('voice')) {
+      if (legend) this.showLegend(who, legend);
+      return;
+    }
     const handle = audio.voice.play(src);
     const obj = a.character ? this.objects.find(o => o.character === a.character) : null;
     const talk = this.el.querySelector('.room-talk');
     this.speaking = { handle, objectId: obj?.id };
     if (obj?.bubble) {
-      talk.style.left = this.pct(obj.bubble[0], this.W);
-      talk.style.top = this.pct(obj.bubble[1], this.H);
+      const [x, y] = this.rectOf(obj);
+      talk.style.left = this.pct(obj.bubble[0] + x - obj.rect[0], this.W);
+      talk.style.top = this.pct(obj.bubble[1] + y - obj.rect[1], this.H);
       talk.querySelector('span').textContent = c?.name || obj.name;
       handle.el.addEventListener('playing', () => talk.classList.add('on'), { once: true });
     }
+    let ended;
+    const done = new Promise(res => { ended = res; });
+    const hold = legend ? this.showLegend(who, legend, { hold: true }) : 0;
     handle.onEnd = () => {
       talk.classList.remove('on');
       if (this.speaking?.handle === handle) this.speaking = null;
+      if (hold && this.legendToken === hold) this.el.querySelector('.room-sub')?.classList.remove('on');
+      ended();
     };
-    if (subtitle) this.say(c?.name || '', subtitle);
+    if (a.wait) return done;
   }
 
   // ---- HUD ----

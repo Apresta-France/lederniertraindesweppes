@@ -191,7 +191,8 @@ export class AudioManager {
     if (this.ctx) this.ambienceBus.gain.setTargetAtTime(this.settings.values.music / 100 * 0.7 * level, this.ctx.currentTime, timeConstant);
   }
 
-  playSample(src, { loop = false, onEnded } = {}) {
+  // duration (ms) : coupe le son avant sa fin, avec un fondu de sortie de fade ms.
+  playSample(src, { loop = false, onEnded, duration, fade = 600 } = {}) {
     const el = new Audio(src);
     el.loop = loop;
     el.volume = Math.min(1, this.volume('sfx'));
@@ -202,6 +203,20 @@ export class AudioManager {
     };
     el.addEventListener('ended', () => { this.samples.delete(el); onEnded?.(); });
     if (this.volume('sfx') > 0) el.play().catch(() => {});
+    if (duration) {
+      const fadeMs = Math.min(fade, duration);
+      setTimeout(() => {
+        this.samples.delete(el);
+        const from = el.volume, t0 = performance.now();
+        const step = now => {
+          const k = Math.min(1, (now - t0) / fadeMs);
+          el.volume = from * (1 - k);
+          if (k < 1) requestAnimationFrame(step);
+          else el.pause();
+        };
+        requestAnimationFrame(step);
+      }, duration - fadeMs);
+    }
     return handle;
   }
 

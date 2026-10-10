@@ -8,8 +8,15 @@
 .room-obj.is-hidden,.room-zone.is-hidden{opacity:0;visibility:hidden}
 .room-obj.is-hidden.fade{transition:opacity .4s,visibility 0s .4s}
 .room-char{transform:var(--gt,none);transform-origin:50% 88%;will-change:transform}
-.room-char>*{position:absolute;inset:0;width:100%;height:100%;visibility:hidden}
+.room-char>*{position:absolute;inset:0;width:100%;height:100%;visibility:hidden;transform:scaleX(var(--flip,1))}
 .room-char>.on{visibility:visible}
+img.room-obj{transform:scaleX(var(--flip,1))}
+/* Animation (action animate) : remplace les images de parole tant qu'elle joue. */
+.room-char.animating{transform:none}
+.room-char.animating>.room-frame-img.on{visibility:hidden}
+.room-char.animating>.room-anim.cur{visibility:visible}
+.room-anim>*{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:50% 100%;visibility:hidden}
+.room-anim>.on{visibility:inherit}
 
 /* Décor */
 .room-decor{position:absolute;pointer-events:none;opacity:0;transition:opacity .5s}
@@ -56,10 +63,9 @@
 .room-help:hover,.room-help:focus-visible{background:rgba(217,183,122,.15)}
 .room-ui button:focus-visible{outline:2px solid #ffe2a8;outline-offset:2px}
 
-.room-say{position:absolute;left:50%;bottom:9.4cqw;transform:translateX(-50%);width:min(64%,900px);box-sizing:border-box;padding:1.2cqw 2cqw;background:rgba(30,22,15,.9);border:1px solid rgba(217,183,122,.5);border-radius:.8cqw;font-size:calc(max(15px,1.3cqw)*var(--ts));line-height:1.5;text-align:center;opacity:0;transition:opacity .35s;pointer-events:none;box-shadow:0 .4cqw 1.6cqw rgba(0,0,0,.45)}
+.room-say{position:absolute;left:50%;top:1.4cqw;transform:translateX(-50%);width:min(36%,620px);box-sizing:border-box;padding:1.2cqw 2cqw;background:rgba(30,22,15,.9);border:1px solid rgba(217,183,122,.5);border-radius:.8cqw;font-size:calc(max(15px,1.3cqw)*var(--ts));line-height:1.5;text-align:center;opacity:0;transition:opacity .35s;pointer-events:none;box-shadow:0 .4cqw 1.6cqw rgba(0,0,0,.45)}
 .room-say.on{opacity:1}
-.room-say .who{display:block;font-size:calc(max(11px,.8cqw)*var(--ts));letter-spacing:.24em;text-transform:uppercase;color:#d9b77a;margin-bottom:.4cqw}
-.room-tip{position:absolute;pointer-events:none;padding:.4cqw 1.1cqw;background:rgba(30,22,15,.9);border:1px solid rgba(217,183,122,.62);border-radius:999px;font-size:calc(max(12px,1.05cqw)*var(--ts));white-space:nowrap;transform:translate(1.2cqw,-130%);opacity:0;transition:opacity .15s;box-shadow:0 .2cqw .8cqw rgba(0,0,0,.4)}
+.room-say .who{display:block;font-size:calc(max(11px,.8cqw)*var(--ts));letter-spacing:.24em;text-transform:uppercase;color:#d9b77a;margin-bottom:.4cqw}.room-tip{position:absolute;pointer-events:none;padding:.4cqw 1.1cqw;background:rgba(30,22,15,.9);border:1px solid rgba(217,183,122,.62);border-radius:999px;font-size:calc(max(12px,1.05cqw)*var(--ts));white-space:nowrap;transform:translate(1.2cqw,-130%);opacity:0;transition:opacity .15s;box-shadow:0 .2cqw .8cqw rgba(0,0,0,.4)}
 .room-tip.on{opacity:1}
 .room-talk{position:absolute;transform:translate(-50%,-100%);display:flex;align-items:center;gap:.35cqw;padding:.4cqw 1cqw;background:rgba(30,22,15,.9);border:1px solid rgba(217,183,122,.62);border-radius:999px;font-size:calc(max(12px,1cqw)*var(--ts));color:#f3e6c8;pointer-events:none;opacity:0;transition:opacity .3s;box-shadow:0 .2cqw .8cqw rgba(0,0,0,.4)}
 .room-talk span{margin-right:.3cqw}
@@ -140,3 +146,4 @@
   .room-zoom img{animation:none}
 }
 .reduce-motion .room-frame,.reduce-motion .room-zoom img{animation:none}
+.reduce-motion .room-char{transform:none}

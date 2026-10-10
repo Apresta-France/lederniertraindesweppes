@@ -17,6 +17,10 @@ export function loadCharacter(id) {
   return characters.get(id);
 }
 
+export function forgetCharacter(id) {
+  characters.delete(id);
+}
+
 export function characterIdleUrl(id, data) {
   const idle = data?.sprites?.idle;
   const path = Array.isArray(idle) ? idle[0] : idle;
