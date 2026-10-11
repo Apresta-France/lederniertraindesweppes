@@ -5,7 +5,7 @@
   "meta": {
     "act": "Acte 1",
     "chapter": "Chapitre I",
-    "notes": "Juste après la course sous la pluie. Les calques sont posés sur le fond nu, aux emplacements de la référence (Sandrine à l'accueil). Aurélie marche sur trois zones de sol : près de l'entrée, devant l'accueil, vers le couloir. La musique est Entree_ehpad, en boucle."
+    "notes": "Juste après la course sous la pluie. À l'entrée, Aurélie dit bonsoir (assets/bonsoir.mp3) ; Sandrine ne répond pas, et l'infobule s'affiche une fois la réplique finie. La sonnette la fait répondre (assets/hein.mp3) : le couloir s'ouvre alors, Aurélie y marche, le hall s'assombrit et la scène suivante est la chambre de Gisèle. Sandrine écrit (animation par défaut) et lève les yeux quand une réplique en voix est jouée. Aurélie marche sur la zone de sol. La musique est Entree_ehpad, en boucle."
   },
   "size": [1024, 576],
   "background": {
@@ -14,7 +14,20 @@
   },
   "music": { "src": "assets/entree_ehpad.mp3", "fade": 2200 },
   "objectives": { "entrer": "Rejoindre l'accueil des Charmilles" },
-  "onEnter": [{ "do": "objective", "set": "entrer", "once": true }],
+  "onEnter": [
+    { "do": "objective", "set": "entrer", "once": true },
+    { "do": "wait", "ms": 800 },
+    {
+      "do": "voice",
+      "character": "aurelie",
+      "to": "sandrine",
+      "src": "assets/bonsoir.mp3",
+      "subtitle": "Bonsoir, je suis Aurélie Desmet. Je viens voir ma grand-mère Gisèle Desmet.",
+      "wait": true
+    },
+    { "do": "wait", "ms": 500 },
+    { "do": "say", "text": "Sandrine ne répond pas..." }
+  ],
   "decor": [
     {
       "type": "vignette",
@@ -25,61 +38,188 @@
     {
       "id": "affiche",
       "name": "L'affiche",
-      "rect": [378, 55, 81, 108],
+      "rect": [384, 52, 81, 108],
       "sprite": "assets/affiche.png",
-      "description": "« Ici, chaque génération compte. »"
+      "cursor": "loupe",
+      "description": "« Ici, chaque génération compte. »",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/tableau_generation.mp3",
+          "subtitle": "Ici, chaque génération compte, mais je suis de quelle génération, moi, avec mes 38 ans ?"
+        }
+      ]
     },
     {
       "id": "horloge",
       "name": "L'horloge",
       "rect": [511, 61, 44, 45],
       "sprite": "assets/horloge.png",
-      "description": "Six heures et demie. Le hall se fait plus calme."
+      "cursor": "loupe",
+      "description": "Six heures et demie. Le hall se fait plus calme.",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/horloge.mp3",
+          "subtitle": "18 h 30, pile poil l'heure que j'avais donnée à mamie Gisèle."
+        }
+      ]
     },
     {
       "id": "tableau",
       "name": "Le tableau",
       "rect": [577, 15, 170, 151],
       "sprite": "assets/tableau.png",
-      "description": "La vie de la résidence : activités, sorties, et les petits moments."
+      "cursor": "loupe",
+      "description": "La vie de la résidence : activités, sorties, et les petits moments.",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/tableau.mp3",
+          "subtitle": "Je me demande comment ce pot peut tenir en équilibre sur un cadre. C'est là qu'on voit que l'IA ne pense pas à tout."
+        }
+      ]
     },
     {
       "id": "pancarte",
       "name": "La pancarte",
-      "rect": [841, -8, 98, 57],
+      "rect": [850, 9, 90, 53],
       "sprite": "assets/pancarte.png",
-      "description": "Chambres, salle à manger, salon, animations. Tout est fléché."
+      "cursor": "loupe",
+      "description": "Chambres, salle à manger, salon, animations. Tout est fléché.",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/panneau_indicateur.mp3",
+          "subtitle": "Les chambres, c'est par là, juste en dessous si je comprends bien, comme le reste en fait."
+        }
+      ]
     },
     {
       "id": "portemanteau",
       "name": "Le porte-manteau",
       "rect": [250, 112, 83, 250],
       "sprite": "assets/portemanteau.png",
-      "description": "Manteaux et parapluies. Certains dégoulinent encore."
+      "cursor": "loupe",
+      "description": "Manteaux et parapluies. Certains dégoulinent encore.",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/porte_manteau.mp3",
+          "subtitle": "Quelqu'un a laissé une écharpe sur ce porte-manteau, pourtant ce n'est pas un porte-écharpe."
+        }
+      ]
+    },
+    {
+      "id": "registre-ouvert-en-cuir-sombre",
+      "name": "Registre ouvert en cuir sombre",
+      "rect": [525, 202, 87, 65],
+      "sprite": "assets/registre-ouvert-en-cuir-sombre.png",
+      "cursor": "loupe",
+      "description": "Une sorte de registre.",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/registre.mp3",
+          "subtitle": "J'ai l'impression que Sandrine est en train de faire des petits dessins sur ce registre."
+        }
+      ]
+    },
+    {
+      "id": "sandrine",
+      "name": "Sandrine",
+      "rect": [538, 145, 85, 95],
+      "character": "sandrine",
+      "animation": "ecrire",
+      "bubble": [640, 108],
+      "onUse": [
+        {
+          "do": "if",
+          "cond": { "var": "accueil-charmilles.autorisee" },
+          "then": [
+            {
+              "do": "voice",
+              "character": "sandrine",
+              "to": "aurelie",
+              "src": "assets/oui_auralie.mp3",
+              "subtitle": "Oui, Aurélie, je vous ai dit que Gisèle vous attendait, donc vous pouvez y aller."
+            }
+          ],
+          "else": [
+            {
+              "do": "voice",
+              "character": "aurelie",
+              "src": "assets/vous-entendez.mp3",
+              "subtitle": "Bonsoir, vous m'entendez ? Manifestement, non."
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "sonnette",
       "name": "La sonnette",
-      "rect": [469, 219, 32, 24],
+      "rect": [466, 222, 26, 19],
       "sprite": "assets/sonnette.png",
       "onUse": [
-        { "do": "sfx", "name": "ding" },
-        { "do": "say", "text": "La sonnette du comptoir. Le hall ne répond pas." }
+        {
+          "do": "if",
+          "cond": { "var": "accueil-charmilles.autorisee" },
+          "then": [{ "do": "say", "who": "Aurélie", "text": "J'ai déjà signalé ma présence." }],
+          "else": [
+            { "do": "sfx", "src": "assets/sonnette.wav", "duration": 2800 },
+            { "do": "wait", "ms": 1100 },
+            {
+              "do": "voice",
+              "character": "sandrine",
+              "to": "aurelie",
+              "src": "assets/hein.mp3",
+              "subtitle": "Hein ? Quoi ? Bonsoir. Ah, Aurélie, Gisèle vous attend. Désolée, j'étais en train de préparer la liste des courses pour les repas de la semaine. Je vous laisse y aller.",
+              "wait": true
+            },
+            { "do": "set", "var": "accueil-charmilles.autorisee", "value": true },
+            { "do": "setState", "object": "contour-2", "state": "ouvert" }
+          ]
+        }
       ]
     },
     {
       "id": "gel",
       "name": "Le gel hydroalcoolique",
-      "rect": [644, 189, 21, 53],
+      "rect": [656, 192, 21, 53],
       "sprite": "assets/gel.png",
-      "description": "Du gel hydroalcoolique, posé bien en vue sur le comptoir."
+      "cursor": "loupe",
+      "description": "Du gel hydroalcoolique, posé bien en vue sur le comptoir.",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/bouteille.mp3",
+          "subtitle": "Il faut se laver les mains et les pieds cinq fois par jour. Ah non ! Ça, c'est les fruits et légumes !"
+        }
+      ]
     },
     {
       "id": "telephone",
       "name": "Le téléphone",
-      "rect": [741, 201, 43, 33],
+      "rect": [738, 210, 38, 29],
       "sprite": "assets/telephone.png",
-      "description": "Le téléphone de l'accueil. L'écran est allumé, personne au bout du fil."
+      "cursor": "loupe",
+      "description": "Le téléphone de l'accueil. L'écran est allumé, personne au bout du fil.",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/telephone.mp3",
+          "subtitle": "Oui, c'est un téléphone. Pas très récent d'ailleurs, mais là, je n'ai personne à appeler."
+        }
+      ]
     },
     {
       "id": "aurelie",
@@ -101,21 +241,68 @@
       "name": "Le présentoir",
       "rect": [930, 308, 101, 237],
       "sprite": "assets/presentoir.png",
-      "description": "Des brochures : santé, bien-être, et une maison pour demain."
+      "cursor": "loupe",
+      "description": "Des brochures : santé, bien-être, et une maison pour demain.",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/presentoir.mp3",
+          "subtitle": "Est-ce qu'il y a vraiment des personnes qui prennent le temps de lire ces fascicules ?"
+        }
+      ]
     },
     {
       "id": "contour",
       "name": "Comptoir d'accueil",
       "rect": [450, 264, 213, 105],
       "points": [[450, 264], [660, 269], [663, 369], [450, 356]],
-      "description": "Il est écrit : Résidence les Charmilles."
+      "cursor": "loupe",
+      "description": "Il est écrit : Résidence les Charmilles.",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/comptoir.mp3",
+          "subtitle": "Je me demande dans quel bois est fabriqué ce magnifique comptoir."
+        }
+      ]
     },
     {
       "id": "contour-2",
-      "name": "Nouvelle zone",
+      "name": "Le couloir",
       "rect": [817, 81, 152, 261],
       "points": [[817, 335], [820, 83], [969, 81], [967, 342]],
-      "description": ""
+      "cursor": "loupe",
+      "description": "Je ne devrais pas y aller sans l'autorisation d'un responsable.",
+      "states": { "ouvert": { "cursor": "marcher" } },
+      "onUse": [
+        {
+          "do": "if",
+          "cond": { "var": "accueil-charmilles.autorisee" },
+          "then": [
+            {
+              "do": "animate",
+              "object": "aurelie",
+              "walk": true,
+              "to": [756, 129],
+              "speed": 180,
+              "wait": true
+            },
+            { "do": "objective", "complete": "entrer" },
+            { "do": "fadeOut", "ms": 1400 },
+            { "do": "goto", "scene": "chambre-gisele" }
+          ],
+          "else": [
+            {
+              "do": "voice",
+              "character": "aurelie",
+              "src": "assets/couloir.mp3",
+              "subtitle": "Je ne devrais pas aller dans ce couloir sans l'autorisation d'un responsable."
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "contour-3",
@@ -134,7 +321,16 @@
         [225, 81],
         [225, 365]
       ],
-      "description": "Hors de question de retourner sous la pluie maintenant !"
+      "cursor": "loupe",
+      "description": "Hors de question de retourner sous la pluie maintenant !",
+      "onUse": [
+        {
+          "do": "voice",
+          "character": "aurelie",
+          "src": "assets/porte.mp3",
+          "subtitle": "Il est hors de question que je retourne sous cette pluie maintenant. Je suis venue voir ma grand-mère."
+        }
+      ]
     },
     {
       "id": "contour-4",

@@ -100,7 +100,8 @@ img.room-obj{transform:scaleX(var(--flip,1))}
 .room-sub{padding:.45cqw 1.3cqw;background:rgba(0,0,0,.66);border-radius:.4cqw;font-size:calc(max(14px,1.2cqw)*var(--ts));color:#fff8e8}
 .room-say .who,.room-sub .who{display:block;font-size:calc(max(11px,.8cqw)*var(--ts));letter-spacing:.24em;text-transform:uppercase;color:#d9b77a;margin-bottom:.3cqw}
 .room-sub .who:empty{display:none}
-.room-tip{position:absolute;pointer-events:none;padding:.4cqw 1.1cqw;background:rgba(30,22,15,.9);border:1px solid rgba(217,183,122,.62);border-radius:999px;font-size:calc(max(12px,1.05cqw)*var(--ts));white-space:nowrap;transform:translate(1.2cqw,-130%);opacity:0;transition:opacity .15s;box-shadow:0 .2cqw .8cqw rgba(0,0,0,.4)}
+/* left/top viennent de placeTip : l'infobulle reste dans le cadre, hors du dessin du curseur. */
+.room-tip{position:absolute;z-index:4;pointer-events:none;padding:.4cqw 1.1cqw;background:rgba(30,22,15,.9);border:1px solid rgba(217,183,122,.62);border-radius:999px;font-size:calc(max(12px,1.05cqw)*var(--ts));white-space:nowrap;opacity:0;transition:opacity .15s;box-shadow:0 .2cqw .8cqw rgba(0,0,0,.4)}
 .room-tip.on{opacity:1}
 .room-talk{position:absolute;transform:translate(-50%,-100%);display:flex;align-items:center;gap:.35cqw;padding:.4cqw 1cqw;background:rgba(30,22,15,.9);border:1px solid rgba(217,183,122,.62);border-radius:999px;font-size:calc(max(12px,1cqw)*var(--ts));color:#f3e6c8;pointer-events:none;opacity:0;transition:opacity .3s;box-shadow:0 .2cqw .8cqw rgba(0,0,0,.4)}
 .room-talk span{margin-right:.3cqw}
@@ -212,21 +213,20 @@ img.room-obj{transform:scaleX(var(--flip,1))}
 @keyframes room-target{0%{transform:scale(1)}30%{transform:scale(1.35)}60%{transform:scale(.92)}100%{transform:scale(1)}}
 @keyframes room-slot-new{0%{box-shadow:0 0 0 0 rgba(217,183,122,.9),inset 0 .25cqw .6cqw rgba(0,0,0,.65)}100%{box-shadow:0 0 0 1.2cqw rgba(217,183,122,0),inset 0 .25cqw .6cqw rgba(0,0,0,.65)}}
 
-/* Carte plein cadre : le visuel de l'année, et un nuage dans chaque coin */
-.room-ov:has(.room-card--map){background:#120e09;backdrop-filter:none;-webkit-backdrop-filter:none}
-.room-card.room-card--map{position:absolute;inset:0;width:auto;height:auto;max-height:none;padding:0;display:block;overflow:hidden;border:0;border-radius:0;background:#120e09;box-shadow:none}
-.room-card--map .room-x{z-index:3;right:1.4cqw;top:1.2cqw;background:rgba(30,22,15,.82);border-color:rgba(217,183,122,.7);box-shadow:0 .2cqw .8cqw rgba(0,0,0,.45)}
-.room-mapview{position:absolute;inset:0}
-.room-mapview-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-.room-mapview-clouds{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+/* Carte : grand cadre, le visuel de l'année, et un nuage dans chaque coin */
+.room-card.room-card--map{display:block;width:min(84cqw,1560px);max-height:88%;padding:0;overflow:hidden;background:#140e09}
+.room-card--map .room-x{z-index:3;background:rgba(30,22,15,.82);border-color:rgba(217,183,122,.7)}
+.room-mapview{position:relative;line-height:0}
+.room-mapview-bg{display:block;width:100%;height:auto}
+.room-mapview-clouds{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:inherit}
 .room-cloud{position:absolute;height:auto;pointer-events:none}
-.room-cloud--voile{left:-28%;top:-18%;width:44%;animation:room-cloud-voile 22s ease-in-out infinite}
-.room-cloud--aerien{left:62%;top:-18%;width:48%;animation:room-cloud-aerien 17s ease-in-out -5s infinite}
-.room-cloud--ciel{left:-14%;top:48%;width:58%;animation:room-cloud-ciel 26s ease-in-out -9s infinite}
+.room-cloud--voile{left:-26%;top:-16%;width:42%;animation:room-cloud-voile 22s ease-in-out infinite}
+.room-cloud--aerien{left:70%;top:-8%;width:38%;animation:room-cloud-aerien 17s ease-in-out -5s infinite}
+.room-cloud--ciel{left:-6%;bottom:-10%;width:22%;animation:room-cloud-ciel 9s ease-in-out infinite}
 .room-cloud--dessus{left:84%;top:52%;width:32%;animation:room-cloud-dessus 20s ease-in-out -13s infinite}
 @keyframes room-cloud-voile{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-3%,-4%,0)}}
 @keyframes room-cloud-aerien{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(4%,-3%,0)}}
-@keyframes room-cloud-ciel{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-3%,4%,0)}}
+@keyframes room-cloud-ciel{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(18%,-22%,0)}}
 @keyframes room-cloud-dessus{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(4%,3%,0)}}
 
 @media (prefers-reduced-motion: reduce){

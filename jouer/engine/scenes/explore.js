@@ -4,7 +4,7 @@ import { resolve, ROOT } from '../core/paths.js';
 import { INVENTORY_SIZE } from '../core/state.js';
 import { CharacterSprite } from '../ui/character.js';
 import { Overlay } from '../ui/overlay.js';
-import { cursorCss, cursorUrl, isCursor, CURSORS } from '../../shared/cursors/cursors.js';
+import { cursorCss, cursorExtent, cursorUrl, isCursor, tipPosition, CURSORS } from '../../shared/cursors/cursors.js';
 import { DEFAULT_HORIZON, depthDurationFactor, depthScale, depthSpace } from '../core/perspective.js';
 import { routeFeet, showsHalo } from '../core/zones.js';
 
@@ -414,7 +414,7 @@ export class ExploreScene extends Scene {
     for (const o of this.objects) if (o.animation) this.animate({ object: o.id, animation: o.animation });
 
     const loop = now => {
-      for (const [id, sp] of Object.entries(this.sprites)) sp.update(now, this.speaking?.objectId === id ? this.speaking.handle : null);
+      for (const [id, sp] of Object.entries(this.sprites)) sp.update(now, this.speaking?.aloud && this.speaking.objectId === id ? this.speaking.handle : null);
       this.tickAnims(now);
       this.raf = requestAnimationFrame(loop);
     };
@@ -495,14 +495,14 @@ export class ExploreScene extends Scene {
       this.setHot(null);
       const s = e.target.closest('.room-slot.full');
       const tool = e.target.closest('[data-tip]');
-      if (s) this.placeTip(this.item(s.dataset.item).name, cx, cy);
-      else if (tool && !tool.classList.contains('open')) this.placeTip(tool.dataset.tip, cx, cy);
+      if (s) this.placeTip(this.item(s.dataset.item).name, cx, cy, 'loupe');
+      else if (tool && !tool.classList.contains('open')) this.placeTip(tool.dataset.tip, cx, cy, 'montrer');
       else this.tip.classList.remove('on');
       return;
     }
     const id = this.isBusy ? null : this.hit(px, py);
     this.setHot(id);
-    if (id) this.placeTip(this.defs.get(id).name, cx, cy);
+    if (id) this.placeTip(this.defs.get(id).name, cx, cy, this.cursorName(id));
     else this.tip.classList.remove('on');
   }
 
@@ -549,10 +549,12 @@ export class ExploreScene extends Scene {
     this.el.style.cursor = cursorCss(this.cursorName(id));
   }
 
-  placeTip(text, x, y) {
-    this.tip.textContent = text;
-    this.tip.style.left = x + 'px';
-    this.tip.style.top = y + 'px';
+  placeTip(text, x, y, cursorId = null) {
+    if (this.tip.textContent !== text) this.tip.textContent = text;
+    const extent = cursorId ? cursorExtent(cursorId) : null;
+    const [left, top] = tipPosition(x, y, this.tip.offsetWidth, this.tip.offsetHeight, this.frame.clientWidth, this.frame.clientHeight, extent);
+    this.tip.style.left = left + 'px';
+    this.tip.style.top = top + 'px';
     this.tip.classList.add('on');
   }
 
@@ -824,7 +826,8 @@ export class ExploreScene extends Scene {
   // animate { object, animation?, walk?, to?: [x, y], duration?, speed?, flip?, hold?, keep?, wait? }
   // walk : choisit marche-<direction> selon le trajet, puis repos-<direction> à l'arrivée.
   // Sans durée ni trajet, une animation en boucle tourne jusqu'au prochain animate sur l'objet.
-  // Pendant une réplique, un personnage immobile reprend ses images de parole.
+  // Un personnage qui peut se déplacer garde sa direction en parlant (parle-<direction> s'il l'a).
+  // Les autres, immobiles, reprennent leurs images de parole face caméra.
   animate(a, ctx = {}) {
     const id = a.object ?? ctx.object?.id;
     const def = this.defs.get(id), el = this.els[id];
@@ -876,6 +879,7 @@ export class ExploreScene extends Scene {
     const start = performance.now();
     this.anims[id] = {
       id, el, layer, frames, fps, loop, from, to, moveMs, depth, cur: -1,
+      name: layer ? name : '',
       start, end: start + playMs, hold: !!a.hold, thenIdle,
       done: () => { resolve(); },
     };
@@ -908,8 +912,8 @@ export class ExploreScene extends Scene {
           st.frames[i].classList.add('on');
           st.cur = i;
         }
-        const talking = this.speaking?.objectId === st.id && !st.to;
-        st.el.classList.toggle('animating', !talking);
+        const faceCamera = !!this.speaking?.aloud && this.speaking.objectId === st.id && !st.to && !this.mover(st.id);
+        st.el.classList.toggle('animating', !faceCamera);
       }
       if (now >= st.end) this.endAnim(st.id, true);
     }
@@ -927,7 +931,15 @@ export class ExploreScene extends Scene {
       st.frames.forEach(f => f.classList.remove('on'));
     }
     st.done();
-    if (natural && st.thenIdle) this.animate({ object: id, animation: st.thenIdle });
+    if (natural && st.thenIdle) {
+      const dir = this.poseDir(st.thenIdle);
+      const parle = dir && `parle-${dir}`;
+      const anims = this.character(this.defs.get(id)?.character)?.animations || {};
+      if (this.speaking?.aloud && this.speaking.objectId === id && this.mover(id) && parle && anims[parle]) {
+        this.speaking.pose = { id, back: st.thenIdle };
+        this.animate({ object: id, animation: parle });
+      } else this.animate({ object: id, animation: st.thenIdle });
+    }
   }
 
   say(who, text) {
@@ -985,10 +997,67 @@ export class ExploreScene extends Scene {
     if (text) this.showLegend('', text);
   }
 
-  // Voix : { character, src | pool (+ pick), subtitle, wait }. La bouche du personnage suit le son.
+  // Direction d'une pose nommée repos-dos-droite, marche-gauche, parle-face…
+  poseDir(name) {
+    return /^(?:repos|marche|course|parle)-(.*)$/.exec(name || '')?.[1] || '';
+  }
+
+  // Quelqu'un peut l'emmener en cliquant une zone de sol.
+  mover(id) {
+    return this.objects.some(o => o?.walkTo === id);
+  }
+
+  // Elle s'adresse à quelqu'un : le champ to, ou un clic sur un autre personnage.
+  // Un clic sur un objet est une pensée.
+  addressed(a, ctx) {
+    const self = a.character || '';
+    if (a.to) {
+      const named = this.objects.find(o => o.id === a.to || o.character === a.to);
+      if (named?.character && named.character !== self) return named;
+    }
+    const clicked = ctx?.object;
+    if (clicked?.character && clicked.character !== self) return clicked;
+    return null;
+  }
+
+  // Garde la direction en cours et joue parle-<direction> si cette animation existe.
+  // Renvoie la pose à rendre à la fin de la réplique.
+  beginPoseTalk(id) {
+    if (!id || !this.mover(id) || this.disposed) return null;
+    const st = this.anims[id];
+    if (!st || st.to) return null;
+    const dir = this.poseDir(st.name);
+    if (!dir) return null;
+    const anims = this.character(this.defs.get(id)?.character)?.animations || {};
+    const talk = anims[`parle-${dir}`] ? `parle-${dir}` : '';
+    const back = anims[`repos-${dir}`] ? `repos-${dir}` : st.name;
+    if (talk && st.name !== talk) this.animate({ object: id, animation: talk });
+    return talk ? { id, back } : null;
+  }
+
+  endPoseTalk(pose) {
+    if (!pose?.back || this.disposed) return;
+    if (this.speaking?.objectId === pose.id) return;
+    const name = this.anims[pose.id]?.name || '';
+    if (name.startsWith('parle-')) this.animate({ object: pose.id, animation: pose.back });
+  }
+
+  // Une pensée ne garde pas la bouche du sprite de dialogue.
+  holdStill(id) {
+    const name = this.anims[id]?.name || '';
+    if (!name.startsWith('parle-')) return;
+    const back = `repos-${this.poseDir(name)}`;
+    const anims = this.character(this.defs.get(id)?.character)?.animations || {};
+    if (anims[back]) this.animate({ object: id, animation: back });
+  }
+
+  // Voix : { character, to?, src | pool (+ pick), subtitle, wait }.
+  // to, ou un clic sur un autre personnage : elle lui parle (bulle du prénom, sprite de dialogue).
+  // Un clic sur un objet est une pensée : la légende seule, sans bulle ni sprite de dialogue.
   // Avec wait, l'action suivante attend la fin de la réplique (ou son interruption).
   // La légende (onglet Sons, ou subtitle) reste affichée le temps du son, même si la voix est coupée.
-  speak(a) {
+  // Un personnage mobile ne se tourne pas vers la caméra : il garde sa direction.
+  speak(a, ctx = {}) {
     const audio = this.game.audio;
     let file = a.src || '';
     let src = file ? this.url(file) : '';
@@ -1011,19 +1080,27 @@ export class ExploreScene extends Scene {
     const who = c?.name || '';
     if (!src) {
       if (legend) this.showLegend(who, legend);
+      if (a.wait && legend) return this.sleep(2600 + legend.length * 45);
       return;
     }
     this.speaking?.handle.stop();
+    const obj = a.character ? this.objects.find(o => o.character === a.character) : null;
+    const aloud = !!this.addressed(a, ctx);
     if (!audio.volume('voice')) {
       if (legend) this.showLegend(who, legend);
+      const pose = aloud ? this.beginPoseTalk(obj?.id) : null;
+      const ms = legend ? 2600 + legend.length * 45 : 0;
+      if (!ms) return;
+      const done = this.sleep(ms).then(() => this.endPoseTalk(pose));
+      if (a.wait) return done;
       return;
     }
     const handle = audio.voice.play(src);
-    const obj = a.character ? this.objects.find(o => o.character === a.character) : null;
     const talk = this.el.querySelector('.room-talk');
-    this.speaking = { handle, objectId: obj?.id };
+    if (!aloud && obj?.id) this.holdStill(obj.id);
+    this.speaking = { handle, objectId: obj?.id, aloud, pose: aloud ? this.beginPoseTalk(obj?.id) : null };
     this.busyChanged();
-    if (obj?.bubble) {
+    if (aloud && obj?.bubble) {
       const [x, y, w, h] = this.visualRect(obj);
       const [, , rw, rh] = obj.rect;
       talk.style.left = this.pct(x + (obj.bubble[0] - obj.rect[0]) * (w / rw), this.W);
@@ -1037,7 +1114,9 @@ export class ExploreScene extends Scene {
     handle.onEnd = () => {
       talk.classList.remove('on');
       if (this.speaking?.handle === handle) {
+        const pose = this.speaking.pose;
         this.speaking = null;
+        this.endPoseTalk(pose);
         if (!this.disposed) this.busyChanged();
       }
       if (hold && this.legendToken === hold) this.el.querySelector('.room-sub')?.classList.remove('on');
@@ -1362,6 +1441,7 @@ export class ExploreScene extends Scene {
 
   showMap() {
     this.openPanelId = null;
+    this.tip.classList.remove('on');
     const year = this.mapYear();
     const src = this.mapSrc(year);
     const clouds = MAP_CLOUDS.map(name => `<img class="room-cloud room-cloud--${name}" src="${esc(resolve(`@shared/maps/nuages/${name}.png`))}" alt="">`).join('');

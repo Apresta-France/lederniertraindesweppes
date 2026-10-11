@@ -274,7 +274,7 @@
       "properties": {
         "do": {
           "enum": ["say", "sfx", "voice", "animate", "setState", "cycleState", "set", "inc", "take", "give", "remove", "hide", "show", "note", "person", "memory", "objective", "examine", "popup", "panelNote", "close", "goto", "fadeOut", "wait", "if", "menu"],
-          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src, duration?} · voice {character?, src | pool+pick, subtitle?, wait?} · animate {object, animation?, walk?, to?: [x, y], duration? | speed?, flip?, hold?, keep?, wait?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · person {character, text?} · memory {id, title, image?, text?} · objective {set?, complete?, once?} · examine {panel} · popup {kicker?, title, text | text[], button?} · panelNote {text} · close · goto {scene} · fadeOut {ms?, music?} · wait {ms} · if {cond, then[], else[]} · menu"
+          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src, duration?} · voice {character?, to?, src | pool+pick, subtitle?, wait?} · animate {object, animation?, walk?, to?: [x, y], duration? | speed?, flip?, hold?, keep?, wait?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · person {character, text?} · memory {id, title, image?, text?} · objective {set?, complete?, once?} · examine {panel} · popup {kicker?, title, text | text[], button?} · panelNote {text} · close · goto {scene} · fadeOut {ms?, music?} · wait {ms} · if {cond, then[], else[]} · menu"
         }
       }
     },

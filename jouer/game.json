@@ -5,7 +5,7 @@
   "continue": "chambre-gisele",
   "year": 2026,
   "maps": {
-    "2026": "@shared/maps/2026.jpg"
+    "2026": "@shared/maps/2026.png"
   },
   "scenes": [
     { "id": "il-etait-une-fois", "label": "« Il était une fois »" },
@@ -15,7 +15,7 @@
     { "id": "aurelie-voiture", "label": "Aurélie arrive en voiture" },
     { "id": "accueil-charmilles", "label": "L'accueil des Charmilles" }
   ],
-  "characters": ["gisele", "aurelie"],
+  "characters": ["gisele", "aurelie", "sandrine"],
   "items": "shared/items/items.json",
   "hud": { "emptySlotVoice": "@shared/audio/rien.mp3" },
   "shell": {

@@ -40,7 +40,7 @@ registerAction('sfx', (a, ctx) => {
   } else ctx.game.audio.ui(a.name || 'soft');
 });
 
-registerAction('voice', (a, ctx) => ctx.scene?.speak?.(a));
+registerAction('voice', (a, ctx) => ctx.scene?.speak?.(a, ctx));
 
 registerAction('animate', (a, ctx) => ctx.scene?.animate?.(a, ctx));
 

@@ -1,0 +1,23 @@
+{
+  "id": "sandrine",
+  "name": "Sandrine",
+  "sprites": {
+    "idle": "sprites/parle-fermee.png",
+    "talk": ["sprites/parle-1.png", "sprites/parle-2.png"],
+    "blink": "sprites/parle-fermee.png"
+  },
+  "animations": {
+    "ecrire": {
+      "frames": [
+        "sprites/ecrire-1.png", "sprites/ecrire-2.png", "sprites/ecrire-3.png", "sprites/ecrire-2.png",
+        "sprites/ecrire-1.png", "sprites/ecrire-2.png", "sprites/ecrire-3.png", "sprites/ecrire-2.png",
+        "sprites/ecrire-1.png", "sprites/ecrire-2.png", "sprites/ecrire-3.png", "sprites/ecrire-2.png",
+        "sprites/ecrire-1.png", "sprites/ecrire-2.png", "sprites/ecrire-3.png", "sprites/ecrire-2.png",
+        "sprites/ecrire-1.png", "sprites/ecrire-2.png", "sprites/ecrire-3.png", "sprites/ecrire-2.png",
+        "sprites/ecrire-cligne.png"
+      ],
+      "fps": 6,
+      "loop": true
+    }
+  }
+}
