@@ -9,6 +9,7 @@
     "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "description": "Identique au nom du dossier." },
     "type": { "enum": ["cinematic", "explore"], "description": "cinematic : séquence minutée non interactive. explore : décor point & click." },
     "title": { "type": "string", "description": "Affiché dans le HUD (explore) et dans les sauvegardes." },
+    "town": { "type": "string", "description": "Commune de la carte (id dans shared/maps/<année>.json). Le repère du joueur s’y pose. Absent : pas de repère." },
     "meta": {
       "type": "object",
       "properties": {

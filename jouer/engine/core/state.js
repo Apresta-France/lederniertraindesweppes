@@ -11,6 +11,7 @@ const blank = () => ({
   done: [],
   journal: { objectives: {}, people: {}, memories: [], seen: {} },
   scenes: {},
+  towns: [],
 });
 
 // État d'une partie : tout ce qui est sauvegardé. Les scènes n'ont pas d'état propre hors d'ici.
@@ -28,6 +29,7 @@ export class GameState extends Emitter {
   load(data) {
     this.data = Object.assign(blank(), structuredClone(data || {}));
     this.data.journal = Object.assign(blank().journal, this.data.journal);
+    if (!Array.isArray(this.data.towns)) this.data.towns = [];
     this.emit('change', { kind: 'reset' });
   }
 
@@ -37,6 +39,15 @@ export class GameState extends Emitter {
 
   changed(kind, detail) {
     this.emit('change', { kind, ...detail });
+  }
+
+  // Commune atteinte : elle reste visible sur la carte, avec celles d'avant.
+  visitTown(id) {
+    if (typeof id !== 'string' || !id) return;
+    const list = this.data.towns ??= [];
+    if (list.includes(id)) return;
+    list.push(id);
+    this.changed('town', { id });
   }
 
   get(name) {

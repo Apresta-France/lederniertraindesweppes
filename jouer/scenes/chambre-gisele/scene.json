@@ -2,6 +2,7 @@
   "id": "chambre-gisele",
   "type": "explore",
   "title": "La chambre de Gisèle",
+  "town": "fournes-en-weppes",
   "meta": {
     "act": "Acte 1",
     "chapter": "Chapitre I",
@@ -392,6 +393,7 @@
                     {
                       "do": "voice",
                       "character": "gisele",
+                      "to": "sandrine",
                       "src": "assets/aurelie_arrive_quand.mp3",
                       "wait": true
                     },
@@ -401,6 +403,7 @@
                     {
                       "do": "voice",
                       "character": "gisele",
+                      "to": "sandrine",
                       "src": "assets/ah_merci.mp3",
                       "wait": true
                     },

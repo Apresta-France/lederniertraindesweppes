@@ -215,11 +215,23 @@ img.room-obj{transform:scaleX(var(--flip,1))}
 
 /* Carte : grand cadre, le visuel de l'année, et un nuage dans chaque coin */
 .room-card.room-card--map{display:block;width:min(84cqw,1560px);max-height:88%;padding:0;overflow:hidden;background:#140e09}
-.room-card--map .room-x{z-index:3;background:rgba(30,22,15,.82);border-color:rgba(217,183,122,.7)}
+.room-card--map .room-x{z-index:6;background:rgba(30,22,15,.82);border-color:rgba(217,183,122,.7)}
 .room-mapview{position:relative;line-height:0}
-.room-mapview-bg{display:block;width:100%;height:auto}
-.room-mapview-clouds{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:inherit}
+.room-mapview-bg{display:block;width:100%;height:auto;transition:filter .22s ease}
+.room-mapview.is-hot .room-mapview-bg{filter:brightness(.55) saturate(.7)}
+.room-mapview-lit{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;opacity:0;filter:brightness(1.2) saturate(1.22) contrast(1.04);transition:opacity .22s ease}
+.room-mapview.is-hot .room-mapview-lit{opacity:1}
+.room-mapview-towns{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.room-mapview-towns polygon{fill:transparent;stroke:transparent;stroke-width:5;stroke-linejoin:round;pointer-events:fill;cursor:var(--cur-montrer,pointer);outline:none}
+.room-mapview-towns polygon.is-hot,.room-mapview-towns polygon:focus-visible{stroke:#ffe6b0;filter:drop-shadow(0 0 4px rgba(255,196,90,.95))}
+.room-mapview-caption{position:absolute;z-index:4;left:50%;bottom:2.4%;transform:translateX(-50%);margin:0;pointer-events:none;padding:.38em 1em .42em;background:rgba(18,12,8,.84);border:1px solid rgba(217,183,122,.82);border-radius:.4em;color:#f3e6c8;font-family:'Cinzel',serif;font-weight:600;letter-spacing:.06em;font-size:clamp(13px,1.35cqw,20px);white-space:nowrap;box-shadow:0 .4em 1.2em rgba(0,0,0,.45)}
+.room-mapview-pin{position:absolute;z-index:5;width:4.5%;height:auto;transform:translate(-50%,-100%);pointer-events:none;filter:drop-shadow(0 .4em .55em rgba(0,0,0,.55));animation:room-pin 2.8s ease-in-out infinite}
+@keyframes room-pin{0%,100%{transform:translate(-50%,-100%)}50%{transform:translate(-50%,calc(-100% - 8px))}}
+.room-mapview-clouds{position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none;border-radius:inherit;mask-image:var(--cloud-mask);-webkit-mask-image:var(--cloud-mask);mask-mode:luminance;-webkit-mask-mode:luminance;mask-size:100% 100%;-webkit-mask-size:100% 100%;mask-repeat:no-repeat;-webkit-mask-repeat:no-repeat}
+.room-mapview.is-hot .room-cloud{filter:brightness(.9)}
 .room-cloud{position:absolute;height:auto;pointer-events:none}
+.room-cloud--drift{opacity:var(--o,.9);transform:translate(-50%,-50%) rotate(var(--r,0deg));animation:room-cloud-drift 28s ease-in-out var(--delay,0s) infinite}
+@keyframes room-cloud-drift{0%,100%{transform:translate(-50%,-50%) rotate(var(--r,0deg))}50%{transform:translate(calc(-50% + var(--dx,1%)), calc(-50% + var(--dy,-1%))) rotate(var(--r,0deg))}}
 .room-cloud--voile{left:-26%;top:-16%;width:42%;animation:room-cloud-voile 22s ease-in-out infinite}
 .room-cloud--aerien{left:70%;top:-8%;width:38%;animation:room-cloud-aerien 17s ease-in-out -5s infinite}
 .room-cloud--ciel{left:-6%;bottom:-10%;width:22%;animation:room-cloud-ciel 9s ease-in-out infinite}
@@ -231,7 +243,7 @@ img.room-obj{transform:scaleX(var(--flip,1))}
 
 @media (prefers-reduced-motion: reduce){
   .room-frame{animation:none}
-  .room-zoom img,.room-cloud{animation:none}
+  .room-zoom img,.room-cloud,.room-mapview-pin{animation:none}
 }
-.reduce-motion .room-frame,.reduce-motion .room-zoom img,.reduce-motion .room-cloud{animation:none}
+.reduce-motion .room-frame,.reduce-motion .room-zoom img,.reduce-motion .room-cloud,.reduce-motion .room-mapview-pin{animation:none}
 .reduce-motion .room-char{transform:none}

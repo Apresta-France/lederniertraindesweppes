@@ -85,6 +85,13 @@ export class SceneProps {
         scope.text({ label: 'Titre', path: ['title'], optional: false, help: 'Affiché dans le HUD et dans les sauvegardes.' }),
         scope.text({ label: 'Acte', path: ['meta', 'act'] }),
         scope.text({ label: 'Chapitre', path: ['meta', 'chapter'] }),
+        ...(scene.type === 'explore' ? [scope.text({
+          label: 'Commune sur la carte',
+          path: ['town'],
+          mono: true,
+          placeholder: 'fournes-en-weppes',
+          help: 'Identifiant d’une commune de shared/maps. Le repère du joueur s’y pose.',
+        })] : []),
         scope.text({ label: 'Notes de travail', path: ['meta', 'notes'], multiline: true, rows: 3, help: 'Jamais affichées en jeu.' })),
       ...(scene.type === 'explore' ? exploreSections(scope) : cinematicSections(scope)),
     ];

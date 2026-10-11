@@ -1,6 +1,7 @@
 import { Scene } from './scene.js';
 import { test, referencedObjects } from '../core/conditions.js';
 import { resolve, ROOT } from '../core/paths.js';
+import { loadJSON } from '../core/loader.js';
 import { INVENTORY_SIZE } from '../core/state.js';
 import { CharacterSprite } from '../ui/character.js';
 import { Overlay } from '../ui/overlay.js';
@@ -43,7 +44,7 @@ const HELP = [
   "Cliquez sur un objet pour l'examiner. Certains changent d'état, d'autres s'ouvrent en grand.",
   "Les objets ramassés rejoignent l'inventaire : ouvrez-le avec l'icône du sac, en bas à gauche, puis cliquez sur un objet pour l'examiner.",
   "Le carnet garde vos objectifs et vos découvertes. L'objectif en cours s'affiche d'un clic sur la cible, en haut à gauche.",
-  "La carte, en bas à gauche, montre les Weppes de l'année où vous êtes.",
+  "La carte, en bas à gauche, montre les Weppes de l'année où vous êtes. Les nuages couvrent les communes pas encore atteintes. Survolez une commune découverte pour la mettre en lumière : le repère indique où vous êtes.",
   "Échap ferme une fenêtre ou l'inventaire, ou ouvre le menu (son, volume, sauvegarde).",
 ];
 const ICONS = {
@@ -105,6 +106,23 @@ function pointInPolygon(points, x, y) {
   return inside;
 }
 
+function distToSegment(x, y, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) return Math.hypot(x - ax, y - ay);
+  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2));
+  return Math.hypot(x - (ax + t * dx), y - (ay + t * dy));
+}
+
+// Vrai si le point est dans la commune, ou à moins de `pad` pixels de son contour.
+function nearPolygon(points, x, y, pad) {
+  if (pointInPolygon(points, x, y)) return true;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    if (distToSegment(x, y, points[j][0], points[j][1], points[i][0], points[i][1]) <= pad) return true;
+  }
+  return false;
+}
+
 function rectPolygon(rect) {
   if (!Array.isArray(rect) || rect.length < 4) return null;
   const [x, y, w, h] = rect;
@@ -142,6 +160,7 @@ export class ExploreScene extends Scene {
     this.hot = null;
     this.speaking = null;
     this.lastPick = {};
+    this.loadMapTowns();
   }
 
   // ---- Lecture de l'état ----
@@ -178,7 +197,7 @@ export class ExploreScene extends Scene {
   }
 
   imagesToPreload() {
-    const urls = [this.url(this.data.background?.src), this.mapSrc(), ...MAP_CLOUDS.map(name => resolve(`@shared/maps/nuages/${name}.png`)), ...CURSORS.map((cursor) => cursorUrl(cursor.id))];
+    const urls = [this.url(this.data.background?.src), this.mapSrc(), resolve('@shared/maps/repere.png'), ...MAP_CLOUDS.map(name => resolve(`@shared/maps/nuages/${name}.png`)), ...CURSORS.map((cursor) => cursorUrl(cursor.id))];
     for (const o of this.objects) {
       if (o.sprite) urls.push(this.url(o.sprite));
       Object.values(o.states || {}).forEach(s => [s.sprite, ...(s.frames || [])].forEach(p => p && urls.push(this.url(p))));
@@ -344,6 +363,7 @@ export class ExploreScene extends Scene {
 
   start() {
     const d = this.data;
+    if (d.town) this.game.state.visitTown(d.town);
     if (d.music?.src) this.game.audio.music.play(this.url(d.music.src), { fade: d.music.fade ?? 2500, volume: d.music.volume ?? 1 });
 
     this.listen(this.frame, 'mousemove', e => this.onMove(e));
@@ -933,11 +953,11 @@ export class ExploreScene extends Scene {
     st.done();
     if (natural && st.thenIdle) {
       const dir = this.poseDir(st.thenIdle);
-      const parle = dir && `parle-${dir}`;
       const anims = this.character(this.defs.get(id)?.character)?.animations || {};
-      if (this.speaking?.aloud && this.speaking.objectId === id && this.mover(id) && parle && anims[parle]) {
+      const talkDir = this.speaking?.aloud && this.speaking.objectId === id && this.mover(id) ? this.mouthDir(anims, dir) : '';
+      if (talkDir) {
         this.speaking.pose = { id, back: st.thenIdle };
-        this.animate({ object: id, animation: parle });
+        this.animate({ object: id, animation: `parle-${talkDir}` });
       } else this.animate({ object: id, animation: st.thenIdle });
     }
   }
@@ -1008,19 +1028,30 @@ export class ExploreScene extends Scene {
   }
 
   // Elle s'adresse à quelqu'un : le champ to, ou un clic sur un autre personnage.
-  // Un clic sur un objet est une pensée.
+  // to vise un objet de la scène, même sans sprite de personnage (l'infirmière dans l'embrasure).
+  // Un clic sur un objet, sans to, est une pensée.
   addressed(a, ctx) {
     const self = a.character || '';
     if (a.to) {
       const named = this.objects.find(o => o.id === a.to || o.character === a.to);
-      if (named?.character && named.character !== self) return named;
+      if (named && named.character !== self && named.id !== self) return named;
     }
     const clicked = ctx?.object;
     if (clicked?.character && clicked.character !== self) return clicked;
     return null;
   }
 
-  // Garde la direction en cours et joue parle-<direction> si cette animation existe.
+  // parle-<direction> dont les images changent. Les vues de dos répètent souvent la bouche fermée :
+  // on prend alors le profil du même côté, pour que la bouche se voie.
+  mouthDir(anims, dir) {
+    const open = name => new Set(anims[name]?.frames || []).size > 1;
+    if (dir && open(`parle-${dir}`)) return dir;
+    const side = dir?.includes('gauche') ? 'gauche' : dir?.includes('droite') ? 'droite' : '';
+    const prefs = side ? [side, `avant-${side}`, 'face'] : ['face', 'droite', 'gauche'];
+    return prefs.find(d => open(`parle-${d}`)) || '';
+  }
+
+  // Garde la direction en cours et joue parle-<direction> si cette animation a une bouche.
   // Renvoie la pose à rendre à la fin de la réplique.
   beginPoseTalk(id) {
     if (!id || !this.mover(id) || this.disposed) return null;
@@ -1029,7 +1060,8 @@ export class ExploreScene extends Scene {
     const dir = this.poseDir(st.name);
     if (!dir) return null;
     const anims = this.character(this.defs.get(id)?.character)?.animations || {};
-    const talk = anims[`parle-${dir}`] ? `parle-${dir}` : '';
+    const talkDir = this.mouthDir(anims, dir);
+    const talk = talkDir ? `parle-${talkDir}` : '';
     const back = anims[`repos-${dir}`] ? `repos-${dir}` : st.name;
     if (talk && st.name !== talk) this.animate({ object: id, animation: talk });
     return talk ? { id, back } : null;
@@ -1052,8 +1084,9 @@ export class ExploreScene extends Scene {
   }
 
   // Voix : { character, to?, src | pool (+ pick), subtitle, wait }.
-  // to, ou un clic sur un autre personnage : elle lui parle (bulle du prénom, sprite de dialogue).
-  // Un clic sur un objet est une pensée : la légende seule, sans bulle ni sprite de dialogue.
+  // Une réplique avec personnage anime la bouche, même sans to (l'entrée dans la chambre).
+  // to, ou un clic sur un autre personnage : bulle du prénom en plus.
+  // Un clic sur un objet, sans to, est une pensée : la légende seule, sans bulle ni sprite.
   // Avec wait, l'action suivante attend la fin de la réplique (ou son interruption).
   // La légende (onglet Sons, ou subtitle) reste affichée le temps du son, même si la voix est coupée.
   // Un personnage mobile ne se tourne pas vers la caméra : il garde sa direction.
@@ -1085,7 +1118,11 @@ export class ExploreScene extends Scene {
     }
     this.speaking?.handle.stop();
     const obj = a.character ? this.objects.find(o => o.character === a.character) : null;
-    const aloud = !!this.addressed(a, ctx);
+    const target = this.addressed(a, ctx);
+    // Bouche : toute réplique d'un personnage, y compris à l'entrée de la scène.
+    // Une pensée, c'est un clic sur un objet sans to : légende seule, sans sprite de dialogue.
+    const thought = !target && ctx.object && ctx.object.character !== a.character;
+    const aloud = !!a.character && !thought;
     if (!audio.volume('voice')) {
       if (legend) this.showLegend(who, legend);
       const pose = aloud ? this.beginPoseTalk(obj?.id) : null;
@@ -1100,7 +1137,7 @@ export class ExploreScene extends Scene {
     if (!aloud && obj?.id) this.holdStill(obj.id);
     this.speaking = { handle, objectId: obj?.id, aloud, pose: aloud ? this.beginPoseTalk(obj?.id) : null };
     this.busyChanged();
-    if (aloud && obj?.bubble) {
+    if (target && obj?.bubble) {
       const [x, y, w, h] = this.visualRect(obj);
       const [, , rw, rh] = obj.rect;
       talk.style.left = this.pct(x + (obj.bubble[0] - obj.rect[0]) * (w / rw), this.W);
@@ -1264,7 +1301,8 @@ export class ExploreScene extends Scene {
       return;
     }
     const btn = e.target.closest('[data-action]');
-    if (!btn || !this.openPanelId || this.isBusy) return;
+    // Une réplique en cours ne bloque pas un panneau déjà ouvert (essayer d'ouvrir la boîte pendant que Gisèle parle).
+    if (!btn || !this.openPanelId || super.isBusy) return;
     const action = this.visiblePanelActions()[+btn.dataset.action];
     if (!action) return;
     const panelId = this.openPanelId;
@@ -1439,17 +1477,159 @@ export class ExploreScene extends Scene {
     return pick ? resolve(pick) : '';
   }
 
-  showMap() {
+  // Communes déjà atteintes : la scène en cours, et celles gardées dans la partie.
+  openTowns(towns) {
+    if (this.data.town) this.game.state.visitTown(this.data.town);
+    const known = new Set(this.game.state.data.towns || []);
+    return towns.filter(t => known.has(t.id));
+  }
+
+  // Nuages semés sur la carte, sauf au-dessus des communes découvertes.
+  mapCloudHtml(towns, open, W, H) {
+    const clear = (x, y, pad) => open.some(t => nearPolygon(t.points, x, y, pad));
+    const spots = [];
+    const add = (x, y, w, rot, o, delay, dx, dy, pad = 48) => {
+      if (x < -40 || y < -40 || x > W + 40 || y > H + 40) return;
+      if (clear(x, y, pad)) return;
+      spots.push({ x, y, w, rot, o, delay, dx, dy, kind: spots.length % MAP_CLOUDS.length });
+    };
+    towns.forEach((t, i) => {
+      if (!t.at || open.some(o => o.id === t.id)) return;
+      const [x, y] = t.at;
+      const side = i % 2 ? 1 : -1;
+      add(x, y, 34 + (i % 4) * 3, (i * 37) % 46 - 23, 0.92, (i % 7) * -1.4, side * 1.4, -1, 36);
+      add(x + side * 110, y + 36, 26, (i * 19) % 30 - 10, 0.84, (i % 5) * -2, side, 1.2, 36);
+    });
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 7; col++) {
+        const x = ((col + 0.35) / 7) * W + ((row % 2) ? 50 : -30);
+        const y = ((row + 0.4) / 5) * H;
+        if (clear(x, y, 210)) continue;
+        add(x, y, 24 + ((row + col) % 4) * 4, ((row * 3 + col * 5) % 40) - 20, 0.78 + ((row + col) % 3) * 0.06, -((row * 7 + col) % 9), (col % 2 ? 1 : -1) * 1.6, row % 2 ? -1.2 : 1);
+      }
+    }
+    const frame = MAP_CLOUDS.map(name => `<img class="room-cloud room-cloud--${name}" src="${esc(resolve(`@shared/maps/nuages/${name}.png`))}" alt="">`).join('');
+    const drift = spots.map(s => `<img class="room-cloud room-cloud--drift" src="${esc(resolve(`@shared/maps/nuages/${MAP_CLOUDS[s.kind]}.png`))}" alt="" style="left:${(s.x / W) * 100}%;top:${(s.y / H) * 100}%;width:${s.w}%;--r:${s.rot}deg;--o:${s.o};--delay:${s.delay}s;--dx:${s.dx}%;--dy:${s.dy}%">`).join('');
+    return frame + drift;
+  }
+
+  // Trou adouci dans les nuages, à l'emplacement des communes découvertes.
+  // Un filtre SVG dans l'image du masque n'est pas peint : le flou passe par un canvas.
+  cloudMask(open, W, H) {
+    if (!open.length || typeof document === 'undefined') return '';
+    const S = 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(W / S));
+    canvas.height = Math.max(1, Math.round(H / S));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    for (const t of open) {
+      t.points.forEach(([x, y], i) => {
+        const px = x / S;
+        const py = y / S;
+        if (i) ctx.lineTo(px, py);
+        else ctx.moveTo(px, py);
+      });
+      ctx.closePath();
+    }
+    ctx.fillStyle = '#000';
+    ctx.strokeStyle = '#000';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 22 / S;
+    ctx.filter = 'blur(14px)';
+    ctx.fill();
+    ctx.stroke();
+    return canvas.toDataURL('image/png');
+  }
+
+  // Communes de la carte de l'année : polygones de survol et point du repère.
+  loadMapTowns(year = this.mapYear()) {
+    const src = this.mapSrc(year);
+    if (!src) return Promise.resolve({ size: [1672, 941], towns: [] });
+    const url = src.replace(/\.png(?=$|\?)/, '.json');
+    return loadJSON(url).then(data => {
+      const size = Array.isArray(data?.size) && data.size.length >= 2 ? data.size : [1672, 941];
+      const towns = (Array.isArray(data?.towns) ? data.towns : []).filter(t => t?.id && t.name && Array.isArray(t.points) && t.points.length >= 3);
+      return { size, towns };
+    }).catch(() => ({ size: [1672, 941], towns: [] }));
+  }
+
+  async showMap() {
+    if (this.mapOpening || this.overlay.isOpen) return;
+    this.mapOpening = true;
     this.openPanelId = null;
     this.tip.classList.remove('on');
     const year = this.mapYear();
     const src = this.mapSrc(year);
-    const clouds = MAP_CLOUDS.map(name => `<img class="room-cloud room-cloud--${name}" src="${esc(resolve(`@shared/maps/nuages/${name}.png`))}" alt="">`).join('');
+    const { size: [W, H], towns } = await this.loadMapTowns(year);
+    this.mapOpening = false;
+    if (this.disposed || this.overlay.isOpen) return;
+    const here = this.data.town;
+    const open = this.openTowns(towns);
+    const hereTown = open.find(t => t.id === here && Array.isArray(t.at));
+    const clouds = this.mapCloudHtml(towns, open, W, H);
+    const mask = this.cloudMask(open, W, H);
+    const polys = open.map(t => {
+      const pts = t.points.map(([x, y]) => `${x},${y}`).join(' ');
+      const label = t.id === here ? `${t.name}, vous êtes ici` : t.name;
+      return `<polygon tabindex="0" role="button" data-town="${esc(t.id)}" aria-label="${esc(label)}" points="${pts}"></polygon>`;
+    }).join('');
+    const pin = hereTown
+      ? `<img class="room-mapview-pin" src="${esc(resolve('@shared/maps/repere.png'))}" alt="${esc(`Vous êtes à ${hereTown.name}`)}" style="left:${(hereTown.at[0] / W) * 100}%;top:${(hereTown.at[1] / H) * 100}%">`
+      : '';
     this.overlay.open(`<div class="room-mapview">
       ${src ? `<img class="room-mapview-bg" src="${esc(src)}" alt="Carte des Weppes en ${year}">` : ''}
-      <div class="room-mapview-clouds" aria-hidden="true">${clouds}</div>
+      ${src ? `<img class="room-mapview-lit" src="${esc(src)}" alt="" draggable="false">` : ''}
+      <svg class="room-mapview-towns" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="group" aria-label="Communes découvertes">${polys}</svg>
+      <div class="room-mapview-clouds" aria-hidden="true"${mask ? ` style="--cloud-mask:url('${mask}')"` : ''}>${clouds}</div>
+      <p class="room-mapview-caption" hidden></p>
+      ${pin}
     </div>`, { label: `Carte des Weppes, ${year}`, cls: 'room-card--map' });
-    this.announce(`Carte des Weppes, ${year}`);
+    this.bindMapTowns(open, W, H, here);
+    const found = open.map(t => t.name).join(', ');
+    this.announce(found ? `Carte des Weppes, ${year}. ${found}.` : `Carte des Weppes, ${year}`);
+  }
+
+  bindMapTowns(towns, W, H, here) {
+    const view = this.el.querySelector('.room-mapview');
+    const svg = view?.querySelector('.room-mapview-towns');
+    const lit = view?.querySelector('.room-mapview-lit');
+    const caption = view?.querySelector('.room-mapview-caption');
+    if (!view || !svg || !lit || !caption) return;
+    const byId = new Map(towns.map(t => [t.id, t]));
+    const show = (id) => {
+      const town = byId.get(id);
+      if (!town) return;
+      view.classList.add('is-hot');
+      for (const poly of svg.querySelectorAll('polygon')) poly.classList.toggle('is-hot', poly.dataset.town === id);
+      lit.style.clipPath = `polygon(${town.points.map(([x, y]) => `${(x / W) * 100}% ${(y / H) * 100}%`).join(',')})`;
+      caption.hidden = false;
+      caption.textContent = town.id === here ? `${town.name} — vous êtes ici` : town.name;
+    };
+    const hide = () => {
+      view.classList.remove('is-hot');
+      for (const poly of svg.querySelectorAll('.is-hot')) poly.classList.remove('is-hot');
+      caption.hidden = true;
+    };
+    svg.addEventListener('pointerover', (e) => {
+      const poly = e.target.closest('polygon');
+      if (poly) show(poly.dataset.town);
+    });
+    svg.addEventListener('pointerout', (e) => {
+      if (!e.target.closest('polygon')) return;
+      if (e.relatedTarget?.closest?.('polygon')) return;
+      hide();
+    });
+    svg.addEventListener('focusin', (e) => {
+      const poly = e.target.closest('polygon');
+      if (poly) show(poly.dataset.town);
+    });
+    svg.addEventListener('focusout', (e) => {
+      if (!svg.contains(e.relatedTarget)) hide();
+    });
   }
 
   showHelp() {
