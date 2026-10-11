@@ -7,6 +7,15 @@ function exploreSections(scope) {
   return [
     section('Décor',
       scope.tuple({ label: 'Taille de référence (size)', path: ['size'], labels: ['Largeur', 'Hauteur'], help: 'Repère de toutes les coordonnées des objets, en pixels. En général la taille de l’image de fond.' }),
+      scope.number({
+        label: 'Horizon de perspective',
+        path: ['perspective', 'horizon'],
+        min: 0,
+        max: 0.9,
+        step: 0.01,
+        placeholder: '0,53',
+        help: 'Ligne du fond, en fraction de la hauteur (0 en haut). Les personnages y sont plus petits et grandissent vers le bas de l’image, comme « Limite du sol » dans l’éditeur de personnages. Vide : 0,53. La taille dessinée reste celle de l’emplacement d’origine.',
+      }),
       scope.asset({ label: 'Image de fond', path: ['background', 'src'], kind: 'image', optional: false }),
       scope.text({
         label: 'Description du fond (alt)',
@@ -17,7 +26,8 @@ function exploreSections(scope) {
       })),
     section('Musique',
       scope.asset({ label: 'Piste', path: ['music', 'src'], kind: 'audio' }),
-      scope.number({ label: 'Fondu d’entrée (ms)', path: ['music', 'fade'], integer: true, min: 0, step: 100 })),
+      scope.number({ label: 'Fondu d’entrée (ms)', path: ['music', 'fade'], integer: true, min: 0, step: 100 }),
+      scope.number({ label: 'Volume (0 à 1)', path: ['music', 'volume'], min: 0, max: 1, step: 0.05, help: 'Avant le réglage Musique du joueur. 1 si le champ est vide.' })),
     section('Logique',
       scope.json({ label: 'Objectifs (objectives)', path: ['objectives'], rows: 4, validate: validators.object, help: '{ "id": "Libellé affiché" }' }),
       actionsField(scope, { label: 'À l’entrée (onEnter)', path: ['onEnter'], rows: 6 })),

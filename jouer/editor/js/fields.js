@@ -142,7 +142,7 @@ export class FormScope {
     return this.wrap(id, label, select, help);
   }
 
-  tuple({ label, path, labels, step = 1, integer = true, optional = false, help = '' }) {
+  tuple({ label, path, labels, step = 1, integer = true, optional = false, help = '', write = null }) {
     const inputs = labels.map((name) => h('input', { type: 'number', step, 'aria-label': `${label} — ${name}`, inputmode: 'decimal' }));
     const commitFromInputs = () => {
       if (inputs.every((input) => input.value === '')) {
@@ -150,7 +150,9 @@ export class FormScope {
         return;
       }
       if (inputs.some((input) => input.value === '' || !Number.isFinite(Number(input.value)))) return;
-      this.commit(path, inputs.map((input) => (integer ? Math.round(Number(input.value)) : Number(input.value))));
+      const next = inputs.map((input) => (integer ? Math.round(Number(input.value)) : Number(input.value)));
+      if (write) write(next);
+      else this.commit(path, next);
     };
     inputs.forEach((input) => input.addEventListener('input', commitFromInputs));
     this.watch(() => {

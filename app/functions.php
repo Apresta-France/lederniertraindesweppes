@@ -327,7 +327,7 @@ function return_path(): string
 {
     $path = request_path();
     $known = [
-        '/', '/le-jeu', '/avancement', '/actualites', '/partenaires', '/contact',
+        '/', '/le-jeu', '/avancement', '/galerie', '/actualites', '/partenaires', '/contact',
         '/mentions-legales', '/confidentialite', '/liste-attente/confirmer',
         '/liste-attente/desinscription',
     ];
@@ -336,7 +336,7 @@ function return_path(): string
     }
     if ($path === '/contact') {
         $subject = strtolower((string) ($_GET['sujet'] ?? ''));
-        $allowed = ['question', 'presse', 'partenariat', 'autre'];
+        $allowed = ['question', 'presse', 'partenariat', 'souvenir', 'autre'];
         if (in_array($subject, $allowed, true)) {
             return $path . '?sujet=' . $subject;
         }
@@ -418,7 +418,8 @@ function path_label(string $path): string
     $map = [
         '/' => 'Accueil',
         '/le-jeu' => 'Le jeu',
-        '/avancement' => 'Avancement',
+        '/avancement' => 'Coulisses',
+        '/galerie' => 'Galerie',
         '/actualites' => 'Actualités',
         '/partenaires' => 'Partenaires',
         '/contact' => 'Contact',

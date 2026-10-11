@@ -1,6 +1,6 @@
 import { h, listen } from './dom.js';
 import { FormScope } from './fields.js';
-import { renderDecorInspector, renderExploreNone, renderObjectInspector } from './explore-inspector.js';
+import { objectProfile, renderDecorInspector, renderExploreNone, renderObjectInspector } from './explore-inspector.js';
 import { renderCinematicNone, renderItemInspector } from './cinematic-inspector.js';
 
 /** Right-hand panel: rebuilt when the selection changes, refreshed in place otherwise. */
@@ -35,6 +35,8 @@ export class Inspector {
       item?.do ?? null,
       item?.type ?? null,
       item ? Array.isArray(item.rect) : null,
+      item && Array.isArray(item.points) ? item.points.length : 0,
+      item && selection?.kind === 'object' ? objectProfile(item) : null,
     ]);
   }
 

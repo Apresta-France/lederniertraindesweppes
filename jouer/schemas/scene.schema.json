@@ -45,7 +45,11 @@
     },
     "music": {
       "type": "object",
-      "properties": { "src": { "type": "string" }, "fade": { "type": "integer" } }
+      "properties": {
+        "src": { "type": "string" },
+        "fade": { "type": "integer" },
+        "volume": { "type": "number", "minimum": 0, "maximum": 1, "description": "Niveau de la piste, avant le réglage Musique du joueur. 1 par défaut." }
+      }
     },
     "sounds": {
       "type": "object",
@@ -61,7 +65,19 @@
     "objectives": { "type": "object", "additionalProperties": { "type": "string" }, "description": "id → libellé affiché." },
     "onEnter": { "$ref": "#/$defs/actions" },
     "decor": { "type": "array", "items": { "$ref": "#/$defs/decor" } },
-    "objects": { "type": "array", "items": { "$ref": "#/$defs/object" }, "description": "Ordre du tableau = ordre d'affichage (le dernier est au premier plan)." },
+    "perspective": {
+      "description": "Taille des personnages selon la profondeur, la même courbe que l’éditeur de personnages (0,45 à l’horizon, 1 au bas de l’image). La taille dessinée dans la scène reste celle de l’emplacement d’origine. false : désactivée.",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "properties": {
+            "horizon": { "type": "number", "minimum": 0, "maximum": 0.9, "description": "Ligne du fond, fraction de la hauteur (0 = haut). 0,53 si absente." }
+          }
+        }
+      ]
+    },
+    "objects": { "type": "array", "items": { "$ref": "#/$defs/object" }, "description": "Ordre du tableau = ordre d'affichage (le dernier est au premier plan). Un personnage qui s'éloigne de son emplacement d'origine passe devant ou derrière les autres calques selon la hauteur de ses pieds." },
     "panels": { "type": "object", "additionalProperties": { "$ref": "#/$defs/panel" }, "description": "Fiches d'examen ouvertes par l'action examine." }
   },
 
@@ -204,12 +220,21 @@
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string", "description": "Nom affiché au survol et lu par les lecteurs d'écran." },
-        "rect": { "$ref": "#/$defs/rect" },
-        "sprite": { "type": "string", "description": "Calque détouré. Absent : zone invisible." },
-        "hit": { "enum": ["alpha", "rect"], "description": "alpha (défaut si sprite) : clic au pixel près. rect : tout le rectangle." },
+        "rect": { "$ref": "#/$defs/rect", "description": "Rectangle englobant. Avec points, il suit le contour (focus clavier, déplacement)." },
+        "points": {
+          "type": "array",
+          "minItems": 3,
+          "description": "Contour cliquable [[x, y], …], au moins 3 sommets, en pixels de référence. Sans calque, le survol peut éclairer cette partie du décor (halo). Le clic suit le contour plutôt que le rectangle.",
+          "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }
+        },
+        "sprite": { "type": "string", "description": "Calque détouré. Absent : zone invisible, ou contour éclairé si points est défini." },
+        "hit": { "enum": ["alpha", "rect"], "description": "alpha (défaut si sprite) : clic au pixel près. rect : tout le rectangle. Ignoré si points est défini." },
+        "cursor": { "enum": ["fleche", "loupe", "montrer", "parler", "marcher", "gauche", "droite", "prendre", "interdit"], "description": "Curseur au survol. Absent : déduit de l'action (loupe, parler, prendre, montrer). La flèche est celle du décor. Un état peut le remplacer avec son propre cursor." },
         "character": { "type": "string", "description": "Personnage animé (shared/characters/<id>) affiché à la place du sprite." },
         "bubble": { "type": "array", "items": { "type": "number" }, "description": "Position [x, y] de la bulle « parle »." },
         "animation": { "type": "string", "description": "Animation du personnage (character.json › animations) jouée en boucle dès l'entrée dans la scène." },
+        "halo": { "type": "boolean", "description": "Zone libre sans calque : true éclaire le décor au survol, false ne l’éclaire pas. Absent : éclairé, sauf si walkTo est défini (zone de déplacement)." },
+        "walkTo": { "type": "string", "description": "Zone de sol : un clic y emmène ce personnage (id d’objet). Les pieds suivent le sol — cette zone et les autres qui emmènent le même personnage — sans couper en diagonale hors du contour. Le halo est éteint par défaut. La marche prend la direction du trajet (marche-droite, marche-dos…), puis le repos correspondant. Le personnage grandit vers le premier plan et rapetisse vers le fond." },
         "state": { "type": "string", "description": "État initial." },
         "states": {
           "type": "object",
@@ -219,6 +244,7 @@
               "sprite": { "type": "string" },
               "frames": { "type": "array", "items": { "type": "string" }, "description": "Images qui alternent tant que l'objet est dans cet état (la première remplace sprite s'il est absent)." },
               "interval": { "type": "number", "description": "Durée d'affichage de chaque image de frames, en ms (2500 par défaut)." },
+              "cursor": { "enum": ["fleche", "loupe", "montrer", "parler", "marcher", "gauche", "droite", "prendre", "interdit"], "description": "Remplace le curseur de l'objet tant que cet état est actif." },
               "sound": { "type": "object", "properties": { "src": { "type": "string" }, "loop": { "type": "boolean" }, "onEnded": { "$ref": "#/$defs/actions" } } }
             }
           }
@@ -248,7 +274,7 @@
       "properties": {
         "do": {
           "enum": ["say", "sfx", "voice", "animate", "setState", "cycleState", "set", "inc", "take", "give", "remove", "hide", "show", "note", "person", "memory", "objective", "examine", "popup", "panelNote", "close", "goto", "fadeOut", "wait", "if", "menu"],
-          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src, duration?} · voice {character?, src | pool+pick, subtitle?, wait?} · animate {object, animation?, to?: [x, y], duration? | speed?, flip?, hold?, keep?, wait?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · person {character, text?} · memory {id, title, image?, text?} · objective {set?, complete?, once?} · examine {panel} · popup {kicker?, title, text | text[], button?} · panelNote {text} · close · goto {scene} · fadeOut {ms?, music?} · wait {ms} · if {cond, then[], else[]} · menu"
+          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src, duration?} · voice {character?, src | pool+pick, subtitle?, wait?} · animate {object, animation?, walk?, to?: [x, y], duration? | speed?, flip?, hold?, keep?, wait?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · person {character, text?} · memory {id, title, image?, text?} · objective {set?, complete?, once?} · examine {panel} · popup {kicker?, title, text | text[], button?} · panelNote {text} · close · goto {scene} · fadeOut {ms?, music?} · wait {ms} · if {cond, then[], else[]} · menu"
         }
       }
     },

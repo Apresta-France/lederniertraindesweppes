@@ -4,17 +4,46 @@ import { resolve, ROOT } from '../core/paths.js';
 import { INVENTORY_SIZE } from '../core/state.js';
 import { CharacterSprite } from '../ui/character.js';
 import { Overlay } from '../ui/overlay.js';
+import { cursorCss, cursorUrl, isCursor, CURSORS } from '../../shared/cursors/cursors.js';
+import { DEFAULT_HORIZON, depthDurationFactor, depthScale, depthSpace } from '../core/perspective.js';
+import { routeFeet, showsHalo } from '../core/zones.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const lcfirst = s => s ? s[0].toLowerCase() + s.slice(1) : '';
 const ITEMS_BASE = new URL('shared/items/', ROOT).href;
 
+function actionsOf(list, out = []) {
+  if (!Array.isArray(list)) return out;
+  for (const action of list) {
+    if (!action || typeof action !== 'object') continue;
+    out.push(action);
+    actionsOf(action.then, out);
+    actionsOf(action.else, out);
+  }
+  return out;
+}
+
+// Sans curseur choisi : prendre, parler à un personnage, agir, ou examiner.
+function inferredCursor(def) {
+  const all = actionsOf(def.onUse);
+  const top = Array.isArray(def.onUse) ? def.onUse : [];
+  const has = (name) => all.some((action) => action.do === name);
+  if (def.walkTo) return 'marcher';
+  if (has('take')) return 'prendre';
+  if (def.character || top.some((action) => action.do === 'voice' && action.character)) return 'parler';
+  if (has('cycleState') || has('setState') || has('goto')) return 'montrer';
+  if (has('examine') || has('say') || def.description) return 'loupe';
+  if (all.length) return 'montrer';
+  return 'fleche';
+}
+
 const HELP = [
-  "Survolez le décor : les objets s'éclairent et affichent leur nom.",
+  "Survolez le décor : les objets s'éclairent, leur nom s'affiche, et le curseur indique l'action.",
   "Au clavier, Tab ou les flèches passent d'un objet à l'autre, Entrée ou Espace l'examine.",
   "Cliquez sur un objet pour l'examiner. Certains changent d'état, d'autres s'ouvrent en grand.",
   "Les objets ramassés rejoignent l'inventaire : ouvrez-le avec l'icône du sac, en bas à gauche, puis cliquez sur un objet pour l'examiner.",
   "Le carnet garde vos objectifs et vos découvertes. L'objectif en cours s'affiche d'un clic sur la cible, en haut à gauche.",
+  "La carte, en bas à gauche, montre les Weppes de l'année où vous êtes.",
   "Échap ferme une fenêtre ou l'inventaire, ou ouvre le menu (son, volume, sauvegarde).",
 ];
 const ICONS = {
@@ -24,6 +53,16 @@ const ICONS = {
 };
 const VOLUMES = [['music', 'Musique'], ['voice', 'Voix'], ['sfx', 'Effets']];
 const JOURNAL_TABS = [['objectifs', 'Objectifs'], ['indices', 'Indices'], ['personnes', 'Personnages'], ['souvenirs', 'Souvenirs']];
+// Nuages du cadre de la carte, un par coin. Le visuel lui-même dépend de l'année.
+const MAP_CLOUDS = ['voile', 'aerien', 'ciel', 'dessus'];
+
+// Secteurs de 45°, dans le sens horaire depuis la droite de l'écran (y vers le bas).
+const WALK_DIRS = ['droite', 'avant-droite', 'face', 'avant-gauche', 'gauche', 'dos-gauche', 'dos', 'dos-droite'];
+function walkHeading(dx, dy) {
+  if (Math.hypot(dx, dy) < 12) return '';
+  const i = Math.round(Math.atan2(dy, dx) / (Math.PI / 4));
+  return WALK_DIRS[((i % 8) + 8) % 8];
+}
 
 const masks = new Map();
 function alphaMask(url, w, h) {
@@ -47,7 +86,44 @@ function alphaMask(url, w, h) {
   return masks.get(key);
 }
 
-// Décor point & click : calques, zones, états d'objets, inventaire, carnet, fiches d'examen.
+function polygonOf(object) {
+  const pts = object?.points;
+  if (!Array.isArray(pts) || pts.length < 3) return null;
+  for (const p of pts) {
+    if (!Array.isArray(p) || p.length < 2 || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) return null;
+  }
+  return pts;
+}
+
+function pointInPolygon(points, x, y) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i][0], yi = points[i][1];
+    const xj = points[j][0], yj = points[j][1];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function rectPolygon(rect) {
+  if (!Array.isArray(rect) || rect.length < 4) return null;
+  const [x, y, w, h] = rect;
+  if (![x, y, w, h].every(Number.isFinite) || w <= 0 || h <= 0) return null;
+  return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+}
+
+function polygonBounds(points) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of points) {
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+  return [minX, minY, Math.max(1, maxX - minX), Math.max(1, maxY - minY)];
+}
+
+// Décor point & click : calques, zones, contours, états d'objets, inventaire, carnet, fiches d'examen.
 export class ExploreScene extends Scene {
   fadeIn = 900;
 
@@ -61,6 +137,7 @@ export class ExploreScene extends Scene {
     this.sprites = {};
     this.anims = {};
     this.livePos = {};
+    this.depthMoved = new Set();
     this.frameTimers = {};
     this.hot = null;
     this.speaking = null;
@@ -101,7 +178,7 @@ export class ExploreScene extends Scene {
   }
 
   imagesToPreload() {
-    const urls = [this.url(this.data.background?.src)];
+    const urls = [this.url(this.data.background?.src), this.mapSrc(), ...MAP_CLOUDS.map(name => resolve(`@shared/maps/nuages/${name}.png`)), ...CURSORS.map((cursor) => cursorUrl(cursor.id))];
     for (const o of this.objects) {
       if (o.sprite) urls.push(this.url(o.sprite));
       Object.values(o.states || {}).forEach(s => [s.sprite, ...(s.frames || [])].forEach(p => p && urls.push(this.url(p))));
@@ -144,9 +221,36 @@ export class ExploreScene extends Scene {
     return `<div class="${cls.join(' ')}" data-decor="${i}" aria-hidden="true" style="${esc(style)}"></div>`;
   }
 
+  // Zone sans image : le survol peut éclairer le décor découpé selon le contour.
+  isPolyZone(o) {
+    return polygonOf(o) && !o.character && !this.spriteOf(o);
+  }
+
+  focusBox(o) {
+    if (o.character) return this.visualRect(o);
+    const moved = this.livePos[o.id] ?? this.saved(o.id).pos;
+    if (Array.isArray(moved)) return [moved[0], moved[1], o.rect[2], o.rect[3]];
+    const poly = polygonOf(o);
+    return poly ? polygonBounds(poly) : o.rect;
+  }
+
+  polyHtml(o) {
+    const hidden = this.isHidden(o.id) ? ' is-hidden' : '';
+    const pts = polygonOf(o);
+    const clip = pts.map(([x, y]) => `${(x / this.W) * 100}% ${(y / this.H) * 100}%`).join(',');
+    const svgPts = pts.map(([x, y]) => `${x},${y}`).join(' ');
+    const glow = showsHalo(o)
+      ? `<div class="room-poly-fx"><div class="room-poly-lit" style="clip-path:polygon(${clip})"><img src="${esc(this.url(this.data.background?.src))}" alt="" draggable="false"></div></div>`
+      : '';
+    return `<div class="room-zone room-poly${hidden}" data-id="${esc(o.id)}">
+      ${glow}
+      <svg class="room-poly-edge" viewBox="0 0 ${this.W} ${this.H}" preserveAspectRatio="none" aria-hidden="true"><polygon points="${svgPts}"></polygon></svg>
+    </div>`;
+  }
+
   objectHtml(o) {
     const hidden = this.isHidden(o.id) ? ' is-hidden' : '';
-    const style = `${this.box(this.rectOf(o))}${this.saved(o.id).flip ? ';--flip:-1' : ''}`;
+    const style = `${this.box(this.visualRect(o))}${this.saved(o.id).flip ? ';--flip:-1' : ''}`;
     if (o.character) {
       const c = this.character(o.character);
       const sp = c?.sprites || {};
@@ -170,14 +274,16 @@ export class ExploreScene extends Scene {
     const above = decor.map((x, i) => [x, i]).filter(([x]) => !below.some(([y]) => y === x));
     const order = [...this.objects].sort((a, b) => a.rect[0] - b.rect[0] || a.rect[1] - b.rect[1]);
 
+    const polys = this.objects.filter(o => this.isPolyZone(o));
     this.el.innerHTML = `
       <div class="room-frame" style="aspect-ratio:${this.W}/${this.H};width:min(100vw,${(this.W / this.H) * 100}vh)">
         <img class="room-bg" src="${esc(this.url(d.background?.src))}" alt="" draggable="false">
+        <div class="room-polys">${polys.map(o => this.polyHtml(o)).join('')}</div>
         ${below.map(([x, i]) => this.decorHtml(x, i)).join('')}
-        ${this.objects.map(o => this.objectHtml(o)).join('')}
+        ${this.objects.map(o => this.isPolyZone(o) ? '' : this.objectHtml(o)).join('')}
         ${above.map(([x, i]) => this.decorHtml(x, i)).join('')}
         <div class="room-hotspots" role="group" aria-label="Objets de la scène : ${esc(d.title)}">
-          ${order.map(o => `<button type="button" class="room-hotspot" data-id="${esc(o.id)}" style="${this.box(this.rectOf(o))}" aria-label="${esc(o.name)}"${this.isHidden(o.id) ? ' hidden' : ''}></button>`).join('')}
+          ${order.map(o => `<button type="button" class="room-hotspot" data-id="${esc(o.id)}" style="${this.box(this.focusBox(o))}" aria-label="${esc(o.name)}"${this.isHidden(o.id) ? ' hidden' : ''}></button>`).join('')}
         </div>
         <div class="room-hud-tl">
           <div class="room-place" aria-hidden="true">${esc(d.title)}</div>
@@ -219,8 +325,12 @@ export class ExploreScene extends Scene {
       if (o.character && el) this.sprites[o.id] = new CharacterSprite(el, [...el.children].slice(0, 4));
       this.updateMask(o);
     }
+    const layers = [...this.frame.children].filter(n => n.classList.contains('room-obj') || n.classList.contains('room-zone'));
+    this.layerAnchor = layers.length ? layers[layers.length - 1].nextElementSibling : null;
+    for (const o of this.objects) if (o.character) this.syncCharacterDepth(o.id);
     this.refreshDecor();
     this.refreshHud();
+    this.applyCursor(null);
   }
 
   updateMask(o) {
@@ -234,7 +344,7 @@ export class ExploreScene extends Scene {
 
   start() {
     const d = this.data;
-    if (d.music?.src) this.game.audio.music.play(this.url(d.music.src), { fade: d.music.fade ?? 2500 });
+    if (d.music?.src) this.game.audio.music.play(this.url(d.music.src), { fade: d.music.fade ?? 2500, volume: d.music.volume ?? 1 });
 
     this.listen(this.frame, 'mousemove', e => this.onMove(e));
     this.listen(this.frame, 'mouseleave', () => { this.setHot(null); this.tip.classList.remove('on'); });
@@ -335,19 +445,45 @@ export class ExploreScene extends Scene {
   }
 
   hit(px, py) {
-    const inRect = (o, [x, y, w, h] = this.rectOf(o)) => px >= x && py >= y && px < x + w && py < y + h;
-    const drawn = this.objects.filter(o => this.spriteOf(o) && o.hit !== 'rect');
-    for (let i = drawn.length - 1; i >= 0; i--) {
-      const o = drawn[i];
-      if (this.isHidden(o.id) || !inRect(o)) continue;
+    const inRect = (o, [x, y, w, h] = this.visualRect(o)) => px >= x && py >= y && px < x + w && py < y + h;
+    const hitsPoly = (o) => {
+      const poly = polygonOf(o);
+      return poly ? pointInPolygon(poly, px, py) : null;
+    };
+    // L’ordre à l’écran (le dernier est devant), pas seulement l’ordre du tableau :
+    // un personnage au premier plan passe devant le calque qu’il recouvre.
+    const drawn = [...this.frame.querySelectorAll(':scope > .room-obj')].reverse();
+    for (const el of drawn) {
+      const o = this.defs.get(el.dataset.id);
+      if (!o || this.isHidden(o.id) || !this.spriteOf(o) || o.hit === 'rect') continue;
+      const poly = hitsPoly(o);
+      if (poly !== null) {
+        if (poly) return o.id;
+        continue;
+      }
+      const box = this.visualRect(o);
+      if (!inRect(o, box)) continue;
       const m = this.masks.get(o.id);
       if (!m) return o.id;
-      const [x, y, w] = this.rectOf(o).map(Math.round);
-      if (m[((Math.floor(py - y) * w) + Math.floor(px - x)) * 4 + 3] > 40) return o.id;
+      const [, , mw, mh] = o.rect.map(Math.round);
+      const scaled = box[2] !== o.rect[2] || box[3] !== o.rect[3];
+      const [x, y, w, h] = scaled ? box : box.map(Math.round);
+      const mx = Math.floor(scaled ? (px - x) / w * mw : px - x);
+      const my = Math.floor(scaled ? (py - y) / h * mh : py - y);
+      const stride = scaled ? mw : w;
+      if (mx < 0 || my < 0 || mx >= (scaled ? mw : w) || my >= (scaled ? mh : h)) continue;
+      if (m[(my * stride + mx) * 4 + 3] > 40) return o.id;
     }
     const zones = this.objects.filter(o => !this.spriteOf(o) || o.hit === 'rect');
     for (let i = zones.length - 1; i >= 0; i--) {
-      if (!this.isHidden(zones[i].id) && inRect(zones[i])) return zones[i].id;
+      const o = zones[i];
+      if (this.isHidden(o.id)) continue;
+      const poly = hitsPoly(o);
+      if (poly !== null) {
+        if (poly) return o.id;
+        continue;
+      }
+      if (inRect(o)) return o.id;
     }
     return null;
   }
@@ -374,7 +510,7 @@ export class ExploreScene extends Scene {
     if (e.target.closest('.room-ui') || e.target.closest('.room-hotspot')) return;
     const [px, py] = this.pointer(e);
     const id = this.hit(px, py);
-    if (id) this.use(id);
+    if (id) this.use(id, [px, py]);
     else this.hideSay();
   }
 
@@ -392,7 +528,25 @@ export class ExploreScene extends Scene {
     if (this.hot) this.els[this.hot]?.classList.remove('hot');
     this.hot = id;
     if (id) this.els[id]?.classList.add('hot');
-    this.frame.classList.toggle('hot', !!id);
+    this.applyCursor(id);
+  }
+
+  // Flèche sur le décor. Sinon le curseur choisi, ou celui que l'action suggère.
+  cursorName(id) {
+    const def = id ? this.defs.get(id) : null;
+    if (!def) return 'fleche';
+    const chosen = def.states?.[this.objectState(id)]?.cursor || def.cursor;
+    if (isCursor(chosen)) return chosen;
+    return inferredCursor(def);
+  }
+
+  applyCursor(id) {
+    if (!this.el) return;
+    if (!this.el.dataset.cursors) {
+      for (const cursor of CURSORS) this.el.style.setProperty(`--cur-${cursor.id}`, cursorCss(cursor.id));
+      this.el.dataset.cursors = '1';
+    }
+    this.el.style.cursor = cursorCss(this.cursorName(id));
   }
 
   placeTip(text, x, y) {
@@ -404,7 +558,7 @@ export class ExploreScene extends Scene {
 
   showTipFor(id) {
     const o = this.defs.get(id), fr = this.frame.getBoundingClientRect();
-    const [x, y, w] = this.rectOf(o);
+    const [x, y, w] = this.focusBox(o);
     this.placeTip(o.name, (x + w / 2) / this.W * fr.width, y / this.H * fr.height + 8);
   }
 
@@ -429,11 +583,62 @@ export class ExploreScene extends Scene {
     }
   }
 
-  use(id) {
+  use(id, point) {
     const def = this.defs.get(id);
     if (!def || this.isHidden(id) || this.overlay.isOpen || this.isBusy) return;
+    if (def.walkTo) {
+      this.walkActor(def, point);
+      if (def.onUse) this.run(def.onUse, { object: def });
+      return;
+    }
     const actions = def.onUse ?? (def.description ? [{ do: 'sfx', name: 'soft' }, { do: 'say', text: def.description }] : []);
     this.run(actions, { object: def });
+  }
+
+  // Zone de sol (walkTo) : les pieds suivent le contour, sans couper le décor en diagonale.
+  walkActor(zone, point) {
+    const actor = this.defs.get(zone.walkTo);
+    if (!actor || this.isHidden(actor.id)) return;
+    const [x, y, w, h] = this.rectOf(actor);
+    const here = [x + w / 2, y + h];
+    const goal = point ? [point[0], point[1]] : this.walkCenter(zone);
+    const route = routeFeet(here, goal, this.walkPolygons(actor.id));
+    const end = route.at(-1);
+    if (!end || Math.hypot(end[0] - here[0], end[1] - here[1]) < 8) return;
+    this.followRoute(actor.id, route, zone.speed ?? 150);
+  }
+
+  walkCenter(zone) {
+    const [zx, zy, zw, zh] = zone.rect;
+    const cx = zx + zw / 2;
+    const cy = zy + zh / 2;
+    const poly = polygonOf(zone);
+    if (!poly || pointInPolygon(poly, cx, cy)) return [cx, cy];
+    return [poly[0][0], poly[0][1]];
+  }
+
+  walkPolygons(actorId) {
+    const polys = [];
+    for (const zone of this.objects) {
+      if (!zone || zone.walkTo !== actorId || this.isHidden(zone.id)) continue;
+      const poly = polygonOf(zone) || rectPolygon(zone.rect);
+      if (poly) polys.push(poly);
+    }
+    return polys;
+  }
+
+  async followRoute(id, feetPoints, speed) {
+    const token = (this.walkToken = (this.walkToken || 0) + 1);
+    for (const feet of feetPoints) {
+      if (this.walkToken !== token || this.disposed) return;
+      const actor = this.defs.get(id);
+      if (!actor) return;
+      const [x, y, w, h] = this.rectOf(actor);
+      if (Math.hypot(feet[0] - (x + w / 2), feet[1] - (y + h)) < 1) continue;
+      const to = [Math.round(feet[0] - w / 2), Math.round(feet[1] - h)];
+      const done = this.animate({ object: id, walk: true, to, speed, wait: true });
+      if (done?.then) await done;
+    }
   }
 
   setObjectState(id, state) {
@@ -449,6 +654,7 @@ export class ExploreScene extends Scene {
     const snd = def.states?.[state]?.sound;
     if (snd) this.playStateSound(id, state, snd);
     this.cycleFrames(id);
+    if (this.hot === id) this.applyCursor(id);
     this.decorEls.forEach(x => {
       if (x.def.preset === 'crt-on' && x.refs.has(id) && test(x.def.when, { game: this.game, scene: this })) {
         x.el.classList.remove('go');
@@ -511,17 +717,101 @@ export class ExploreScene extends Scene {
   // ---- Animations (character.json › animations) et déplacements ----
 
   // Rectangle courant : la position déplacée (sauvegardée, ou en cours de trajet) remplace x, y.
+  // La largeur et la hauteur restent celles du rectangle posé : ce sont les pieds qui bougent.
   rectOf(o) {
     const p = this.livePos[o.id] ?? this.saved(o.id).pos;
     return Array.isArray(p) ? [p[0], p[1], o.rect[2], o.rect[3]] : o.rect;
   }
 
+  // null : perspective coupée. Sinon la ligne du fond, en fraction de la hauteur.
+  horizon() {
+    const p = this.data.perspective;
+    if (p === false) return null;
+    const h = p && typeof p === 'object' ? Number(p.horizon) : NaN;
+    return Number.isFinite(h) ? h : DEFAULT_HORIZON;
+  }
+
+  // 1 à l’emplacement posé dans la scène. La courbe est celle de l’éditeur de personnages.
+  depthFactor(o, feetY) {
+    const horizon = this.horizon();
+    if (horizon == null || !o?.character) return 1;
+    const ref = depthScale((o.rect[1] + o.rect[3]) / this.H, horizon);
+    const here = depthScale(feetY / this.H, horizon);
+    return ref > 0 ? here / ref : 1;
+  }
+
+  // Rectangle affiché : les pieds restent au même point, le corps grandit vers le bas de l’image.
+  visualRect(o) {
+    const logical = this.rectOf(o);
+    const [x, y, w, h] = logical;
+    const factor = this.depthFactor(o, y + h);
+    if (factor === 1) return logical;
+    const vw = w * factor;
+    const vh = h * factor;
+    return [x + (w - vw) / 2, y + h - vh, vw, vh];
+  }
+
   placeObject(id) {
-    const [x, y] = this.rectOf(this.defs.get(id));
-    for (const el of [this.els[id], this.hotspots.find(h => h.dataset.id === id)]) {
+    const def = this.defs.get(id);
+    if (def && this.isPolyZone(def)) return;
+    const [x, y, w, h] = this.visualRect(def);
+    for (const el of [this.els[id], this.hotspots.find(spot => spot.dataset.id === id)]) {
       if (!el) continue;
       el.style.left = this.pct(x, this.W);
       el.style.top = this.pct(y, this.H);
+      el.style.width = this.pct(w, this.W);
+      el.style.height = this.pct(h, this.H);
+    }
+    if (def?.character) this.syncCharacterDepth(id);
+  }
+
+  // Devant les calques dont la base est au-dessus des pieds, derrière ceux qui descendent plus bas.
+  syncCharacterDepth(id) {
+    const el = this.els[id];
+    const def = this.defs.get(id);
+    if (!el?.parentElement || !def?.character || this.horizon() == null) return;
+    const feet = this.rectOf(def)[1] + this.rectOf(def)[3];
+    const home = def.rect[1] + def.rect[3];
+    if (Math.abs(feet - home) < 1) {
+      if (this.depthMoved.has(id)) {
+        this.depthMoved.delete(id);
+        this.restoreObjectOrder();
+        for (const other of this.depthMoved) this.placeCharacterDepth(other);
+      }
+      return;
+    }
+    this.depthMoved.add(id);
+    this.placeCharacterDepth(id);
+  }
+
+  placeCharacterDepth(id) {
+    const el = this.els[id];
+    const def = this.defs.get(id);
+    if (!el?.parentElement || !def) return;
+    const feet = this.rectOf(def)[1] + this.rectOf(def)[3];
+    const parent = el.parentElement;
+    const others = [...parent.children].filter(n => n !== el && n.classList.contains('room-obj'));
+    const baseline = (node) => {
+      const o = this.defs.get(node.dataset.id);
+      if (!o?.rect) return 0;
+      const [, y, , h] = o.character ? this.rectOf(o) : o.rect;
+      return y + h;
+    };
+    const next = others.find(n => baseline(n) > feet);
+    if (next) {
+      if (el.nextSibling !== next) parent.insertBefore(el, next);
+    } else if (others.length && el.previousSibling !== others[others.length - 1]) {
+      parent.insertBefore(el, others[others.length - 1].nextSibling);
+    }
+  }
+
+  restoreObjectOrder() {
+    const anchor = this.layerAnchor;
+    if (!anchor?.parentElement) return;
+    const parent = anchor.parentElement;
+    for (const o of this.objects) {
+      const el = this.els[o.id];
+      if (el?.parentElement === parent) parent.insertBefore(el, anchor);
     }
   }
 
@@ -531,7 +821,8 @@ export class ExploreScene extends Scene {
     this.placeObject(id);
   }
 
-  // animate { object, animation?, to?: [x, y], duration?, speed?, flip?, hold?, keep?, wait? }
+  // animate { object, animation?, walk?, to?: [x, y], duration?, speed?, flip?, hold?, keep?, wait? }
+  // walk : choisit marche-<direction> selon le trajet, puis repos-<direction> à l'arrivée.
   // Sans durée ni trajet, une animation en boucle tourne jusqu'au prochain animate sur l'objet.
   // Pendant une réplique, un personnage immobile reprend ses images de parole.
   animate(a, ctx = {}) {
@@ -546,21 +837,37 @@ export class ExploreScene extends Scene {
       el.style.setProperty('--flip', a.flip ? -1 : 1);
     }
 
-    const name = a.animation;
+    const from = this.rectOf(def);
+    const to = Array.isArray(a.to) && a.to.length >= 2 ? a.to : null;
+    let name = a.animation;
+    let thenIdle = '';
+    if (a.walk && to && def.character) {
+      const dir = walkHeading(to[0] - from[0], to[1] - from[1]);
+      const anims = this.character(def.character)?.animations || {};
+      if (dir && anims[`marche-${dir}`]) {
+        name = `marche-${dir}`;
+        if (anims[`repos-${dir}`]) thenIdle = `repos-${dir}`;
+      }
+    }
     const anim = name && def.character ? this.character(def.character)?.animations?.[name] : null;
     if (name && !anim) console.warn(`[animate] animation « ${name} » introuvable pour « ${id} »`);
     const layer = anim ? [...el.querySelectorAll('.room-anim')].find(x => x.dataset.anim === name) : null;
     const frames = layer ? [...layer.children] : [];
     const fps = anim?.fps > 0 ? anim.fps : 8;
     const loop = anim?.loop !== false;
-    const from = this.rectOf(def);
-    const to = Array.isArray(a.to) && a.to.length >= 2 ? a.to : null;
 
     if (this.reduceMotion || (!frames.length && !to)) {
       if (to) this.moveTo(id, to);
+      if (thenIdle) this.animate({ object: id, animation: thenIdle });
       return;
     }
-    const moveMs = to ? Math.max(0, a.duration ?? Math.hypot(to[0] - from[0], to[1] - from[1]) / (a.speed ?? 200) * 1000) : 0;
+    // La marche ralentit au fond et accélère au premier plan, comme sur le terrain d’essai.
+    let depth = null;
+    if (to && a.duration == null && a.walk && def.character && this.horizon() != null) {
+      depth = [this.depthFactor(def, from[1] + from[3]), this.depthFactor(def, to[1] + to[3])];
+    }
+    const dist = to ? Math.hypot(to[0] - from[0], to[1] - from[1]) : 0;
+    const moveMs = to ? Math.max(0, a.duration ?? dist / (a.speed ?? 200) * (depth ? depthDurationFactor(depth[0], depth[1]) : 1) * 1000) : 0;
     const playMs = to ? (a.keep ? Infinity : moveMs)
       : a.duration != null ? a.duration
         : loop ? Infinity : frames.length * 1000 / fps;
@@ -568,8 +875,8 @@ export class ExploreScene extends Scene {
     const finished = new Promise(res => { resolve = res; });
     const start = performance.now();
     this.anims[id] = {
-      id, el, layer, frames, fps, loop, from, to, moveMs, cur: -1,
-      start, end: start + playMs, hold: !!a.hold,
+      id, el, layer, frames, fps, loop, from, to, moveMs, depth, cur: -1,
+      start, end: start + playMs, hold: !!a.hold, thenIdle,
       done: () => { resolve(); },
     };
     if (layer) {
@@ -583,10 +890,11 @@ export class ExploreScene extends Scene {
     for (const st of Object.values(this.anims)) {
       const t = now - st.start;
       if (st.to) {
-        const k = st.moveMs ? Math.min(1, t / st.moveMs) : 1;
+        const u = st.moveMs ? Math.min(1, t / st.moveMs) : 1;
+        const k = st.depth ? depthSpace(u, st.depth[0], st.depth[1]) : u;
         this.livePos[st.id] = [st.from[0] + (st.to[0] - st.from[0]) * k, st.from[1] + (st.to[1] - st.from[1]) * k];
         this.placeObject(st.id);
-        if (k >= 1) {
+        if (u >= 1) {
           this.moveTo(st.id, st.to);
           st.to = null;
           st.done();
@@ -619,6 +927,7 @@ export class ExploreScene extends Scene {
       st.frames.forEach(f => f.classList.remove('on'));
     }
     st.done();
+    if (natural && st.thenIdle) this.animate({ object: id, animation: st.thenIdle });
   }
 
   say(who, text) {
@@ -715,9 +1024,10 @@ export class ExploreScene extends Scene {
     this.speaking = { handle, objectId: obj?.id };
     this.busyChanged();
     if (obj?.bubble) {
-      const [x, y] = this.rectOf(obj);
-      talk.style.left = this.pct(obj.bubble[0] + x - obj.rect[0], this.W);
-      talk.style.top = this.pct(obj.bubble[1] + y - obj.rect[1], this.H);
+      const [x, y, w, h] = this.visualRect(obj);
+      const [, , rw, rh] = obj.rect;
+      talk.style.left = this.pct(x + (obj.bubble[0] - obj.rect[0]) * (w / rw), this.W);
+      talk.style.top = this.pct(y + (obj.bubble[1] - obj.rect[1]) * (h / rh), this.H);
       talk.querySelector('span').textContent = c?.name || obj.name;
       handle.el.addEventListener('playing', () => talk.classList.add('on'), { once: true });
     }
@@ -1036,13 +1346,30 @@ export class ExploreScene extends Scene {
     </div>`;
   }
 
+  // Année de la partie : variable « year », sinon l'année de départ déclarée dans game.json.
+  mapYear() {
+    const n = Number(this.game.state.get('year'));
+    if (Number.isFinite(n) && n > 0) return Math.trunc(n);
+    const fallback = Number(this.game.data.game.year);
+    return Number.isFinite(fallback) && fallback > 0 ? Math.trunc(fallback) : 2026;
+  }
+
+  mapSrc(year = this.mapYear()) {
+    const maps = this.game.data.game.maps || {};
+    const pick = maps[year] || maps[this.game.data.game.year] || maps[2026];
+    return pick ? resolve(pick) : '';
+  }
+
   showMap() {
     this.openPanelId = null;
-    this.overlay.open(`<div class="room-info">
-      <div class="k">Carte</div><h3>${esc(this.data.title)}</h3><div class="room-orn"><b></b><i></i><b></b></div>
-      <p>La carte des Weppes se dévoilera au fil de l'aventure.</p>
-      <div class="room-acts"><button type="button" class="room-btn" data-close>Fermer</button></div>
-    </div>`, { single: true, label: 'Carte' });
+    const year = this.mapYear();
+    const src = this.mapSrc(year);
+    const clouds = MAP_CLOUDS.map(name => `<img class="room-cloud room-cloud--${name}" src="${esc(resolve(`@shared/maps/nuages/${name}.png`))}" alt="">`).join('');
+    this.overlay.open(`<div class="room-mapview">
+      ${src ? `<img class="room-mapview-bg" src="${esc(src)}" alt="Carte des Weppes en ${year}">` : ''}
+      <div class="room-mapview-clouds" aria-hidden="true">${clouds}</div>
+    </div>`, { label: `Carte des Weppes, ${year}`, cls: 'room-card--map' });
+    this.announce(`Carte des Weppes, ${year}`);
   }
 
   showHelp() {

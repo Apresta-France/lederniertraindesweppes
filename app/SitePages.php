@@ -16,7 +16,7 @@ final class SitePages
 
     public static function avancement(array $params = []): void
     {
-        self::page('pages/avancement', 'avancement', 'Avancement — Le Dernier Train des Weppes', 'La feuille de route du développement du Dernier Train des Weppes.', 'assets/img/gare.png');
+        self::page('pages/avancement', 'avancement', 'Coulisses — Le Dernier Train des Weppes', 'Comment Le Dernier Train des Weppes est construit : la ligne Michon, le travail de l\'équipe et l\'usage de l\'intelligence artificielle.', 'assets/img/quai.png');
     }
 
     public static function actualites(array $params = []): void
@@ -42,14 +42,19 @@ final class SitePages
         ]);
     }
 
+    public static function galerie(array $params = []): void
+    {
+        self::page('pages/galerie', 'galerie', 'Galerie — Le Dernier Train des Weppes', 'Scènes, planches de référence et éléments du Dernier Train des Weppes.', 'assets/img/gare-nuit.png');
+    }
+
     public static function partenaires(array $params = []): void
     {
-        self::page('pages/partenaires', 'partenaires', 'Partenaires — Le Dernier Train des Weppes', 'Devenez partenaire du Dernier Train des Weppes et faites découvrir le territoire des Weppes autrement.', 'assets/img/gare.png');
+        self::page('pages/partenaires', 'partenaires', 'Partenaires — Le Dernier Train des Weppes', 'Devenez partenaire du Dernier Train des Weppes et faites découvrir le territoire des Weppes autrement.', 'assets/img/plaque-fournes.png');
     }
 
     public static function contact(array $params = []): void
     {
-        $subjects = ['Question', 'Presse', 'Partenariat', 'Autre'];
+        $subjects = ['Question', 'Presse', 'Partenariat', 'Souvenir', 'Autre'];
         $asked = strtolower((string) ($_GET['sujet'] ?? ''));
         $sujet = 'Question';
         foreach ($subjects as $subject) {

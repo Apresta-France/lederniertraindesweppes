@@ -11,6 +11,7 @@ $go = static function (string $target): callable {
 $router->get('/', [SitePages::class, 'home']);
 $router->get('/le-jeu', [SitePages::class, 'jeu']);
 $router->get('/avancement', [SitePages::class, 'avancement']);
+$router->get('/galerie', [SitePages::class, 'galerie']);
 $router->get('/actualites', [SitePages::class, 'actualites']);
 $router->get('/actualites/{slug}', [SitePages::class, 'article']);
 $router->get('/partenaires', [SitePages::class, 'partenaires']);
@@ -29,6 +30,7 @@ $router->post('/liste-attente/desinscription', [Forms::class, 'unsubscribe']);
 $router->get('/index.html', $go('/'));
 $router->get('/le-jeu.html', $go('/le-jeu'));
 $router->get('/avancement.html', $go('/avancement'));
+$router->get('/galerie.html', $go('/galerie'));
 $router->get('/actualites.html', $go('/actualites'));
 $router->get('/partenaires.html', $go('/partenaires'));
 $router->get('/contact.html', $go('/contact'));

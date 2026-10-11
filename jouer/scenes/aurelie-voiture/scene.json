@@ -2,6 +2,7 @@
   "id": "aurelie-voiture",
   "type": "cinematic",
   "title": "Aurélie arrive en voiture",
+  "next": "accueil-charmilles",
   "meta": {
     "act": "Acte 1",
     "chapter": "Chapitre I",

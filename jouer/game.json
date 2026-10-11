@@ -3,12 +3,17 @@
   "version": "0.2.0",
   "start": "il-etait-une-fois",
   "continue": "chambre-gisele",
+  "year": 2026,
+  "maps": {
+    "2026": "@shared/maps/2026.jpg"
+  },
   "scenes": [
     { "id": "il-etait-une-fois", "label": "« Il était une fois »" },
     { "id": "intro-cinematique", "label": "Cinématique d'ouverture" },
     { "id": "acte1-arrivee", "label": "Acte 1 — titre et arrivée" },
     { "id": "chambre-gisele", "label": "Chambre de Gisèle" },
-    { "id": "aurelie-voiture", "label": "Aurélie arrive en voiture" }
+    { "id": "aurelie-voiture", "label": "Aurélie arrive en voiture" },
+    { "id": "accueil-charmilles", "label": "L'accueil des Charmilles" }
   ],
   "characters": ["gisele", "aurelie"],
   "items": "shared/items/items.json",

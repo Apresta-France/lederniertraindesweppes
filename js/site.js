@@ -119,21 +119,28 @@
 
   var lightbox = document.querySelector('.lb');
   if (lightbox) {
-    var items = [].slice.call(document.querySelectorAll('.gallery button'));
+    var items = [].slice.call(document.querySelectorAll('.gallery button, .pair button, .zoom'));
     var index = 0;
     var image = lightbox.querySelector('img');
     var caption = lightbox.querySelector('.cap');
+    function visibleItems() {
+      return items.filter(function (button) { return !button.hidden; });
+    }
     function show(next) {
-      if (!items.length) return;
-      index = (next + items.length) % items.length;
-      var source = items[index].querySelector('img');
+      var list = visibleItems();
+      if (!list.length) return;
+      index = (next + list.length) % list.length;
+      var source = list[index].querySelector('img');
       image.src = source.src;
       image.alt = source.alt;
       caption.textContent = source.alt;
       lightbox.classList.add('on');
     }
-    items.forEach(function (button, itemIndex) {
-      button.addEventListener('click', function () { show(itemIndex); });
+    items.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var itemIndex = visibleItems().indexOf(button);
+        if (itemIndex >= 0) show(itemIndex);
+      });
     });
     lightbox.addEventListener('click', function () { lightbox.classList.remove('on'); });
     lightbox.querySelector('.prev').addEventListener('click', function (event) {

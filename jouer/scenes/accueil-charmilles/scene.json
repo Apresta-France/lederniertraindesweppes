@@ -1,0 +1,164 @@
+{
+  "id": "accueil-charmilles",
+  "type": "explore",
+  "title": "L'accueil des Charmilles",
+  "meta": {
+    "act": "Acte 1",
+    "chapter": "Chapitre I",
+    "notes": "Juste après la course sous la pluie. Les calques sont posés sur le fond nu, aux emplacements de la référence (Sandrine à l'accueil). Aurélie marche sur trois zones de sol : près de l'entrée, devant l'accueil, vers le couloir. La musique est Entree_ehpad, en boucle."
+  },
+  "size": [1024, 576],
+  "background": {
+    "src": "assets/fond.jpg",
+    "alt": "Hall d'accueil de la Résidence Les Charmilles, le soir. À gauche, les portes vitrées donnent sur le parking sous la pluie. Au centre, le bureau d'accueil en bois. À droite, le couloir des chambres. Le carrelage luit sous les lampes."
+  },
+  "music": { "src": "assets/entree_ehpad.mp3", "fade": 2200 },
+  "objectives": { "entrer": "Rejoindre l'accueil des Charmilles" },
+  "onEnter": [{ "do": "objective", "set": "entrer", "once": true }],
+  "decor": [
+    {
+      "type": "vignette",
+      "background": "radial-gradient(ellipse at 50% 42%,transparent 55%,rgba(18,8,2,.42) 100%)"
+    }
+  ],
+  "objects": [
+    {
+      "id": "affiche",
+      "name": "L'affiche",
+      "rect": [378, 55, 81, 108],
+      "sprite": "assets/affiche.png",
+      "description": "« Ici, chaque génération compte. »"
+    },
+    {
+      "id": "horloge",
+      "name": "L'horloge",
+      "rect": [511, 61, 44, 45],
+      "sprite": "assets/horloge.png",
+      "description": "Six heures et demie. Le hall se fait plus calme."
+    },
+    {
+      "id": "tableau",
+      "name": "Le tableau",
+      "rect": [577, 15, 170, 151],
+      "sprite": "assets/tableau.png",
+      "description": "La vie de la résidence : activités, sorties, et les petits moments."
+    },
+    {
+      "id": "pancarte",
+      "name": "La pancarte",
+      "rect": [841, -8, 98, 57],
+      "sprite": "assets/pancarte.png",
+      "description": "Chambres, salle à manger, salon, animations. Tout est fléché."
+    },
+    {
+      "id": "portemanteau",
+      "name": "Le porte-manteau",
+      "rect": [250, 112, 83, 250],
+      "sprite": "assets/portemanteau.png",
+      "description": "Manteaux et parapluies. Certains dégoulinent encore."
+    },
+    {
+      "id": "sonnette",
+      "name": "La sonnette",
+      "rect": [469, 219, 32, 24],
+      "sprite": "assets/sonnette.png",
+      "onUse": [
+        { "do": "sfx", "name": "ding" },
+        { "do": "say", "text": "La sonnette du comptoir. Le hall ne répond pas." }
+      ]
+    },
+    {
+      "id": "gel",
+      "name": "Le gel hydroalcoolique",
+      "rect": [644, 189, 21, 53],
+      "sprite": "assets/gel.png",
+      "description": "Du gel hydroalcoolique, posé bien en vue sur le comptoir."
+    },
+    {
+      "id": "telephone",
+      "name": "Le téléphone",
+      "rect": [741, 201, 43, 33],
+      "sprite": "assets/telephone.png",
+      "description": "Le téléphone de l'accueil. L'écran est allumé, personne au bout du fil."
+    },
+    {
+      "id": "aurelie",
+      "name": "Aurélie",
+      "rect": [124, 105, 168, 321],
+      "character": "aurelie",
+      "animation": "repos-dos-droite",
+      "bubble": [360, 210],
+      "onUse": [
+        {
+          "do": "say",
+          "who": "Aurélie",
+          "text": "Encore un peu essoufflée. Grand-mère est quelque part dans cette résidence."
+        }
+      ]
+    },
+    {
+      "id": "presentoir",
+      "name": "Le présentoir",
+      "rect": [930, 308, 101, 237],
+      "sprite": "assets/presentoir.png",
+      "description": "Des brochures : santé, bien-être, et une maison pour demain."
+    },
+    {
+      "id": "contour",
+      "name": "Comptoir d'accueil",
+      "rect": [450, 264, 213, 105],
+      "points": [[450, 264], [660, 269], [663, 369], [450, 356]],
+      "description": "Il est écrit : Résidence les Charmilles."
+    },
+    {
+      "id": "contour-2",
+      "name": "Nouvelle zone",
+      "rect": [817, 81, 152, 261],
+      "points": [[817, 335], [820, 83], [969, 81], [967, 342]],
+      "description": ""
+    },
+    {
+      "id": "contour-3",
+      "name": "Porte de sortie",
+      "rect": [55, 50, 170, 346],
+      "points": [
+        [97, 396],
+        [97, 384],
+        [90, 368],
+        [88, 352],
+        [90, 349],
+        [90, 341],
+        [80, 334],
+        [55, 330],
+        [58, 50],
+        [225, 81],
+        [225, 365]
+      ],
+      "description": "Hors de question de retourner sous la pluie maintenant !"
+    },
+    {
+      "id": "contour-4",
+      "name": "Nouvelle zone",
+      "rect": [99, 340, 854, 232],
+      "points": [
+        [99, 406],
+        [245, 365],
+        [288, 373],
+        [338, 358],
+        [427, 391],
+        [672, 416],
+        [731, 414],
+        [831, 340],
+        [953, 345],
+        [922, 572],
+        [208, 572],
+        [207, 513],
+        [175, 490],
+        [169, 445],
+        [103, 424]
+      ],
+      "cursor": "marcher",
+      "walkTo": "aurelie"
+    }
+  ]
+}

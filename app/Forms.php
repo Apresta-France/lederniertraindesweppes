@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 final class Forms
 {
-    private const SUBJECTS = ['Question', 'Presse', 'Partenariat', 'Autre'];
+    private const SUBJECTS = ['Question', 'Presse', 'Partenariat', 'Souvenir', 'Autre'];
 
     public static function waitlist(array $params = []): void
     {
@@ -263,14 +263,14 @@ final class Forms
             $path = rtrim($path, '/');
         }
         $known = [
-            '/', '/le-jeu', '/avancement', '/actualites', '/partenaires', '/contact',
+            '/', '/le-jeu', '/avancement', '/galerie', '/actualites', '/partenaires', '/contact',
             '/mentions-legales', '/confidentialite',
         ];
         if (!in_array($path, $known, true) && !preg_match('#^/actualites/[a-z0-9\-]+$#', $path)) {
             $path = '/';
         }
         $query = parse_url($raw, PHP_URL_QUERY);
-        if ($path === '/contact' && is_string($query) && preg_match('/^sujet=(question|presse|partenariat|autre)$/', $query)) {
+        if ($path === '/contact' && is_string($query) && preg_match('/^sujet=(question|presse|partenariat|souvenir|autre)$/', $query)) {
             $path .= '?' . $query;
         }
         if ($anchor && !str_contains($path, '#')) {

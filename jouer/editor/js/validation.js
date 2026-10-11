@@ -1,7 +1,9 @@
 import { ACTION_NAMES } from './actions.js';
+import { isCursor } from '../../shared/cursors/cursors.js';
 import { OPS } from './timeline-ops.js';
 import { fileName, formatClock } from './paths.js';
 import { collectSounds, soundNeedsLegend } from './sounds.js';
+import { isPolygon } from './geometry.js';
 
 const OBJECT_ACTIONS = new Set(['setState', 'cycleState', 'take', 'hide', 'show', 'animate']);
 const ITEM_ACTIONS = new Set(['take', 'give', 'remove']);
@@ -69,6 +71,14 @@ function validateExplore(scene, ctx, { warn, info, checkFile, checkScene }) {
   else checkFile(scene.background.src, 'Fond', null);
   if (!scene.background?.alt?.trim()) warn('Le fond n’a pas de description (alt) pour les lecteurs d’écran.');
   if (scene.music?.src !== undefined) checkFile(scene.music.src, 'Musique', null);
+  if (isObj(scene.perspective)) {
+    const horizon = scene.perspective.horizon;
+    if (horizon !== undefined && (typeof horizon !== 'number' || horizon < 0 || horizon > 0.9)) {
+      warn('Horizon de perspective : nombre entre 0 et 0,9 (fraction de la hauteur, 0 en haut).');
+    }
+  } else if (scene.perspective !== undefined && scene.perspective !== false) {
+    warn('« perspective » vaut false, ou un objet { "horizon" }.');
+  }
 
   const seen = new Map();
   objects.forEach((object, index) => {
@@ -90,11 +100,20 @@ function validateExplore(scene, ctx, { warn, info, checkFile, checkScene }) {
         warn(`${label} : dépasse du décor (${width} × ${height}).`, selection);
       }
     }
+    if (object.halo !== undefined && typeof object.halo !== 'boolean') warn(`${label} : « halo » doit valoir true ou false.`, selection);
+    if (object.points !== undefined) {
+      if (!isPolygon(object.points)) warn(`${label} : contour invalide (au moins 3 points [x, y]).`, selection);
+      else if (width && height && object.points.some(([x, y]) => x < -1 || y < -1 || x > width + 1 || y > height + 1)) {
+        warn(`${label} : un point du contour sort du décor (${width} × ${height}).`, selection);
+      }
+    }
     if (object.sprite !== undefined) checkFile(object.sprite, `${label}, calque`, selection);
+    if (object.cursor !== undefined && !isCursor(object.cursor)) warn(`${label} : curseur inconnu « ${object.cursor} ».`, selection);
     if (object.character && !ctx.characters.includes(object.character)) warn(`${label} : personnage inconnu « ${object.character} ».`, selection);
     if (isObj(object.states)) {
       for (const [name, state] of Object.entries(object.states)) {
         if (state?.sprite !== undefined) checkFile(state.sprite, `${label}, état « ${name} »`, selection);
+        if (state?.cursor !== undefined && !isCursor(state.cursor)) warn(`${label}, état « ${name} » : curseur inconnu « ${state.cursor} ».`, selection);
         if (Array.isArray(state?.frames)) state.frames.forEach((f) => checkFile(f, `${label}, image de l’état « ${name} »`, selection));
         if (state?.sound?.src !== undefined) checkFile(state.sound.src, `${label}, son de l’état « ${name} »`, selection);
       }

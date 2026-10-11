@@ -28,7 +28,7 @@ $statusLabel = ['done' => 'Terminé', 'now' => 'En cours', 'next' => 'À venir']
   <div style="margin-top:clamp(56px,8vw,96px)"><div class="pillars"><div><div class="num">I</div><h3 class="h3">Un terroir réel</h3><p class="small">Fournes-en-Weppes, sa gare, ses moulins et son patois servent de décor et de matière au récit.</p></div><div><div class="num">II</div><h3 class="h3">Observer, cliquer, comprendre</h3><p class="small">Chaque objet de la pièce raconte quelque chose : une photo, une horloge arrêtée, une boîte en fer fermée à clé.</p></div><div><div class="num">III</div><h3 class="h3">Sans installation</h3><p class="small">Le jeu tourne dans le navigateur. Jouez sans compte, ou créez-en un pour reprendre votre partie sur n'importe quel appareil.</p></div></div></div>
 </section>
 <section style="padding-bottom:clamp(72px,10vw,120px)">
-  <div class="wrap" style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:28px"><div class="stack-s"><div class="eyebrow">Images du jeu</div><h2 class="h2">La nuit de l'orage</h2></div><div class="small">Touchez une image pour l'agrandir</div></div>
+  <div class="wrap" style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:28px"><div class="stack-s"><div class="eyebrow">Images du jeu</div><h2 class="h2">La nuit de l'orage</h2></div><a class="link" href="/galerie">Toute la galerie →</a></div>
   <div class="wrap gallery">
     <?php foreach ($site['gallery'] as $shot): ?>
       <button type="button"<?= !empty($shot['sheet']) ? ' class="sheet"' : '' ?>><img src="<?= e(asset($shot['src'])) ?>" alt="<?= e($shot['alt']) ?>" loading="lazy"><span><?= e($shot['alt']) ?></span></button>
@@ -36,7 +36,7 @@ $statusLabel = ['done' => 'Terminé', 'now' => 'En cours', 'next' => 'À venir']
   </div>
 </section>
 <section class="band" id="avancement"><div class="wrap sec" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:clamp(36px,6vw,80px)">
-  <div class="stack"><div class="stack-s"><div class="eyebrow">Avancement</div><h2 class="h2">Le voyage est en cours</h2></div><p class="small" style="font-size:17px;line-height:1.7">Le jeu se construit étape par étape. Le prototype ouvrira d'abord aux inscrits de la liste d'attente.</p><a class="link" href="/avancement" style="border-bottom:1px solid rgba(217,183,122,.5);padding-bottom:4px;align-self:flex-start">Voir la feuille de route</a></div>
+  <div class="stack"><div class="stack-s"><div class="eyebrow">Avancement</div><h2 class="h2">Le voyage est en cours</h2></div><p class="small" style="font-size:17px;line-height:1.7">Le jeu se construit étape par étape. Le prototype ouvrira d'abord aux inscrits de la liste d'attente.</p><a class="link" href="/avancement" style="border-bottom:1px solid rgba(217,183,122,.5);padding-bottom:4px;align-self:flex-start">Comment nous l'avons créé</a></div>
   <div class="steps">
     <?php foreach ($site['steps'] as $step): ?>
       <div class="step">
@@ -60,6 +60,6 @@ $statusLabel = ['done' => 'Terminé', 'now' => 'En cours', 'next' => 'À venir']
 </section>
 <section class="band" id="partenaires" style="border-bottom:0"><div class="wrap sec stack" style="gap:40px">
   <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap"><div class="stack-s"><div class="eyebrow">Partenaires</div><h2 class="h2">Ils accompagnent le voyage</h2><p class="small" style="font-size:17px;max-width:620px">Collectivités, acteurs du patrimoine et entreprises des Weppes : rejoignez le projet et faites découvrir le territoire autrement.</p></div><a class="btn-ghost" href="/partenaires" style="font-size:13px">Devenir partenaire</a></div>
-  <?php partial('logos', ['limit' => 4, 'placeholders' => 4]); ?>
+  <?php if (partner_logos()) { partial('logos', ['limit' => 4, 'placeholders' => 0]); } ?>
 </div></section>
 <div class="lb" role="dialog" aria-label="Image agrandie"><img alt=""><div class="lb-bar"><button class="prev" type="button" aria-label="Précédente">←</button><span class="cap"></span><button class="next" type="button" aria-label="Suivante">→</button></div></div>

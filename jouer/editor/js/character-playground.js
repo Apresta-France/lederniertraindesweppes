@@ -1,8 +1,8 @@
 import { h, uid, clamp, slugify } from './dom.js';
 import { CharacterSprite } from '../../engine/ui/character.js';
+import { DEFAULT_HORIZON, depthScale } from '../../engine/core/perspective.js';
 
 const DEFAULT_BG = new URL('../assets/salle-vide.jpg', import.meta.url).href;
-const DEFAULT_HORIZON = 0.53;
 // Keyboard moves in depth look too fast at the same pixel speed as sideways moves.
 const DEPTH_SPEED = 0.7;
 
@@ -425,8 +425,7 @@ export class CharacterPlayground {
 
   depth(y) {
     if (!this.settings.perspective) return 1;
-    const horizon = this.settings.horizon;
-    return 0.45 + 0.55 * clamp((y - horizon) / Math.max(0.05, 1 - horizon), 0, 1);
+    return depthScale(y, this.settings.horizon);
   }
 
   tick(now) {
