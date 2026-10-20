@@ -27,6 +27,15 @@ $statusLabel = ['done' => 'Terminé', 'now' => 'En cours', 'next' => 'À venir']
   </div>
   <div style="margin-top:clamp(56px,8vw,96px)"><div class="pillars"><div><div class="num">I</div><h3 class="h3">Un terroir réel</h3><p class="small">Fournes-en-Weppes, sa gare, ses moulins et son patois servent de décor et de matière au récit.</p></div><div><div class="num">II</div><h3 class="h3">Observer, cliquer, comprendre</h3><p class="small">Chaque objet de la pièce raconte quelque chose : une photo, une horloge arrêtée, une boîte en fer fermée à clé.</p></div><div><div class="num">III</div><h3 class="h3">Sans installation</h3><p class="small">Le jeu tourne dans le navigateur. Jouez sans compte, ou créez-en un pour reprendre votre partie sur n'importe quel appareil.</p></div></div></div>
 </section>
+<section class="wrap" id="apercu" style="padding-bottom:clamp(72px,10vw,120px)">
+  <div class="stack-s" style="padding-bottom:28px">
+    <div class="eyebrow">Aperçu</div>
+    <h2 class="h2">Le jeu en mouvement</h2>
+  </div>
+  <div class="frame vod" style="position:relative;width:100%;aspect-ratio:1000/562">
+    <iframe id="ik-vod-1jijk03up6nfk" class="ik-player-1jhvl2upwockr ik-embed" src="https://player.vod2.infomaniak.com/embed/1jijk03up6nfk" style="position:absolute;inset:0;width:100%;height:100%;border:0" allowfullscreen crossorigin="anonymous" loading="lazy" allow="autoplay; fullscreen; picture-in-picture; clipboard-write" title="Aperçu du Dernier Train des Weppes"></iframe>
+  </div>
+</section>
 <section style="padding-bottom:clamp(72px,10vw,120px)">
   <div class="wrap" style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:28px"><div class="stack-s"><div class="eyebrow">Images du jeu</div><h2 class="h2">La nuit de l'orage</h2></div><a class="link" href="/galerie">Toute la galerie →</a></div>
   <div class="wrap gallery">

@@ -260,8 +260,8 @@ function send_security_headers(): void
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
-    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'");
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=(), autoplay=(self "https://player.vod2.infomaniak.com"), fullscreen=(self "https://player.vod2.infomaniak.com"), picture-in-picture=(self "https://player.vod2.infomaniak.com"), clipboard-write=(self "https://player.vod2.infomaniak.com")');
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; frame-src https://player.vod2.infomaniak.com; form-action 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'");
 }
 
 function handle_error(int $severity, string $message, string $file, int $line): bool
