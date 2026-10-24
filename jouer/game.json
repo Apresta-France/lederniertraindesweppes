@@ -13,7 +13,8 @@
     { "id": "acte1-arrivee", "label": "Acte 1 — titre et arrivée" },
     { "id": "chambre-gisele", "label": "Chambre de Gisèle" },
     { "id": "aurelie-voiture", "label": "Aurélie arrive en voiture" },
-    { "id": "accueil-charmilles", "label": "L'accueil des Charmilles" }
+    { "id": "accueil-charmilles", "label": "L'accueil des Charmilles" },
+    { "id": "chambre-gisele-aurelie", "label": "Aurélie dans la chambre de Gisèle" }
   ],
   "characters": ["gisele", "aurelie", "sandrine"],
   "items": "shared/items/items.json",

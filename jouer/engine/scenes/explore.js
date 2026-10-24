@@ -925,7 +925,7 @@ export class ExploreScene extends Scene {
         }
       }
       if (st.frames.length) {
-        const n = Math.floor(t * st.fps / 1000);
+        const n = Math.max(0, Math.floor(t * st.fps / 1000));
         const i = st.loop ? n % st.frames.length : Math.min(n, st.frames.length - 1);
         if (i !== st.cur) {
           st.frames[st.cur]?.classList.remove('on');

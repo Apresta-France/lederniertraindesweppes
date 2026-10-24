@@ -31,11 +31,14 @@
       <a href="<?= e($href) ?>"<?= $section === $key ? ' aria-current="page"' : '' ?>><?= e($label) ?></a>
     <?php endforeach; ?>
   </nav>
-  <form method="post" action="/admin/deconnexion">
-    <?= csrf_field() ?>
-    <input type="hidden" name="redirect" value="/admin/connexion">
-    <button class="text-btn" type="submit">Sortir</button>
-  </form>
+  <div class="admin-actions">
+    <a class="btn admin-play" href="/jouer/" target="_blank" rel="noopener">Jouer</a>
+    <form method="post" action="/admin/deconnexion">
+      <?= csrf_field() ?>
+      <input type="hidden" name="redirect" value="/admin/connexion">
+      <button class="text-btn" type="submit">Sortir</button>
+    </form>
+  </div>
 </header>
 <main class="admin-main">
   <?php $flashOk = flash('ok'); $flashErr = flash('err'); ?>

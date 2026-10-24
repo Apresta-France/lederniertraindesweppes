@@ -292,7 +292,8 @@
             },
             { "do": "objective", "complete": "entrer" },
             { "do": "fadeOut", "ms": 1400 },
-            { "do": "goto", "scene": "chambre-gisele" }
+            { "do": "sfx", "src": "assets/coucou_mamie.mp3" },
+            { "do": "goto", "scene": "chambre-gisele-aurelie" }
           ],
           "else": [
             {
