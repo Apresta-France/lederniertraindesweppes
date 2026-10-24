@@ -41,7 +41,7 @@
       "do": "voice",
       "character": "gisele",
       "src": "assets/gisele_intro_chambre.mp3",
-      "subtitle": ""
+      "subtitle": "Ah, encore une journée bien calme. Aurélie ne devrait plus tarder, je pense."
     }
   ],
   "decor": [
@@ -120,7 +120,7 @@
       "sprite": "assets/fenetre_fermee.png",
       "description": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir.",
       "onUse": [
-        { "do": "voice", "src": "assets/fenetre.mp3" },
+        { "do": "voice", "src": "assets/fenetre.mp3", "subtitle": "Je vois que les travaux n'avancent pas très très vite dehors." },
         {
           "do": "say",
           "text": "Dehors, le chantier du Clos du Moulin. Une pelleteuse attend sous le ciel du soir."
@@ -134,7 +134,7 @@
       "sprite": "assets/lit_fait.png",
       "description": "Le lit est fait au carré.",
       "onUse": [
-        { "do": "voice", "src": "assets/lit.mp3" },
+        { "do": "voice", "src": "assets/lit.mp3", "subtitle": "C'est bientôt l'heure d'aller dormir et en première classe !" },
         { "do": "say", "text": "Le lit est fait au carré." }
       ]
     },
@@ -145,7 +145,7 @@
       "sprite": "assets/fauteuil_vide.png",
       "description": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre.",
       "onUse": [
-        { "do": "voice", "src": "assets/fauteuil.mp3" },
+        { "do": "voice", "src": "assets/fauteuil.mp3", "subtitle": "J'ai passé trop de temps ces dernières années dans ce fauteuil. J'aimerais bien revenir un peu en arrière." },
         { "do": "say", "text": "Le fauteuil préféré de Gisèle, tourné vers la fenêtre." }
       ]
     },
@@ -177,7 +177,7 @@
       "sprite": "assets/table_chevet.png",
       "description": "Une table de chevet en bois, à portée de main du lit.",
       "onUse": [
-        { "do": "voice", "src": "assets/table_chevet.mp3" },
+        { "do": "voice", "src": "assets/table_chevet.mp3", "subtitle": "Il faudra que je pense à retirer le chocolat que j'ai caché dans mes tiroirs." },
         { "do": "say", "text": "Une table de chevet en bois, à portée de main du lit." }
       ]
     },
@@ -188,7 +188,7 @@
       "sprite": "assets/lampe_chevet.png",
       "description": "La lampe est restée allumée. Elle éclaire doucement la chambre.",
       "onUse": [
-        { "do": "voice", "src": "assets/lampe.mp3" },
+        { "do": "voice", "src": "assets/lampe.mp3", "subtitle": "Oh, ma lampe est allumée. Tant pis, je l'éteindrai plus tard." },
         { "do": "say", "text": "La lampe est restée allumée. Elle éclaire doucement la chambre." }
       ]
     },
@@ -199,7 +199,7 @@
       "sprite": "assets/pilulier.png",
       "description": "Un pilulier, un compartiment par jour de la semaine.",
       "onUse": [
-        { "do": "voice", "src": "assets/pilulier.mp3" },
+        { "do": "voice", "src": "assets/pilulier.mp3", "subtitle": "Il ne faut pas que j'oublie de prendre mes médicaments ce soir et pas tout d'un coup comme la dernière fois." },
         { "do": "say", "text": "Un pilulier, un compartiment par jour de la semaine." }
       ]
     },
@@ -245,6 +245,7 @@
                 "do": "voice",
                 "character": "gisele",
                 "src": "assets/bizarre_tele_vivante.mp3",
+                "subtitle": "Tiens donc, c'est nouveau ça. La télé qui s'allume et qui s'éteint toute seule. Je ne vais rien dire, on va me penser folle.",
                 "wait": true
               },
               { "do": "wait", "ms": 1500 },
@@ -273,7 +274,7 @@
               ],
               "else": [
                 { "do": "sfx", "name": "click" },
-                { "do": "voice", "src": "assets/tele_pas_fonctionner.mp3" },
+                { "do": "voice", "src": "assets/tele_pas_fonctionner.mp3", "subtitle": "Je ne regarde plus la télé. Mes lunettes ne sont pas assez adaptées." },
                 { "do": "say", "text": "La télé ne semble pas fonctionner pour le moment." }
               ]
             }
@@ -288,7 +289,7 @@
       "sprite": "assets/cadre_photo.png",
       "description": "Une jeune femme pose devant un moulin. Au dos, une écriture fine : « Rose ».",
       "onUse": [
-        { "do": "voice", "src": "assets/photo.mp3" },
+        { "do": "voice", "src": "assets/photo.mp3", "subtitle": "Je ne sais même plus qui est sur cette photo, mais c'est pas grave, je la garde." },
         {
           "do": "say",
           "text": "Une jeune femme pose devant un moulin. Au dos, une écriture fine : « Rose »."
@@ -305,7 +306,7 @@
         "ouverte": { "sprite": "assets/boite_fer_fermee.png" }
       },
       "description": "Une boîte en fer peinte de fleurs. Un petit cadenas la tient fermée.",
-      "onUse": [{ "do": "voice", "src": "assets/boite.mp3" }, { "do": "examine", "panel": "boite" }]
+      "onUse": [{ "do": "voice", "src": "assets/boite.mp3", "subtitle": "Oh, mais c'est ma petite boîte à secret ! Où est-ce que j'ai mis la clé, au fait ?" }, { "do": "examine", "panel": "boite" }]
     },
     {
       "id": "horloge",
@@ -314,7 +315,7 @@
       "sprite": "assets/horloge_murale.png",
       "description": "L'horloge s'est arrêtée.",
       "onUse": [
-        { "do": "voice", "src": "assets/horloge.mp3" },
+        { "do": "voice", "src": "assets/horloge.mp3", "subtitle": "Il faut que je demande à Aurélie de remettre des piles dans cette horloge." },
         { "do": "say", "text": "L'horloge s'est arrêtée." }
       ]
     },
@@ -325,7 +326,7 @@
       "sprite": "assets/calendrier.png",
       "description": "Novembre 2026.",
       "onUse": [
-        { "do": "voice", "src": "assets/calendrier.mp3" },
+        { "do": "voice", "src": "assets/calendrier.mp3", "subtitle": "Ce camion de pompiers est d'un rouge un peu trop vif, il me fait mal aux yeux." },
         { "do": "say", "text": "Novembre 2026." }
       ]
     },
@@ -336,7 +337,7 @@
       "sprite": "assets/tableau_affichage.png",
       "description": "Les Charmilles. Le menu et les animations de la semaine.",
       "onUse": [
-        { "do": "voice", "src": "assets/tableau.mp3" },
+        { "do": "voice", "src": "assets/tableau.mp3", "subtitle": "Les Charmilles ? Quel drôle de nom. C'est bien la première fois que je vois ce tableau, en tout cas." },
         { "do": "say", "text": "Les Charmilles. Le menu et les animations de la semaine." }
       ]
     },
@@ -382,29 +383,31 @@
                   "do": "if",
                   "cond": { "state": "bouton", "eq": "allume" },
                   "then": [
-                    { "do": "voice", "src": "assets/jarrive_gisele.mp3", "wait": true },
+                    { "do": "voice", "src": "assets/jarrive_gisele.mp3", "subtitle": "Oui, oui, voilà Gisèle, j'arrive immédiatement.", "wait": true },
                     { "do": "sfx", "src": "assets/pas_sandrine.mp3", "duration": 2500 },
                     { "do": "wait", "ms": 2000 },
                     { "do": "setState", "object": "porte", "state": "ouverte" },
                     { "do": "show", "object": "sandrine" },
                     { "do": "set", "var": "chambre-gisele.sandrine", "value": true },
-                    { "do": "voice", "src": "assets/je_suis_la.mp3", "wait": true },
+                    { "do": "voice", "src": "assets/je_suis_la.mp3", "subtitle": "Et hop, je suis là. Que puis-je pour vous ?", "wait": true },
                     { "do": "wait", "ms": 500 },
                     {
                       "do": "voice",
                       "character": "gisele",
                       "to": "sandrine",
                       "src": "assets/aurelie_arrive_quand.mp3",
+                      "subtitle": "Oh, Sandrine, c'est bien gentil de passer me dire bonjour. Sauriez-vous quand est-ce qu'Aurélie va passer me voir ?",
                       "wait": true
                     },
                     { "do": "wait", "ms": 500 },
-                    { "do": "voice", "src": "assets/elle_arrive_bientot.mp3", "wait": true },
+                    { "do": "voice", "src": "assets/elle_arrive_bientot.mp3", "subtitle": "Gisèle, vous m'avez posé la même question tout à l'heure. Elle ne devrait plus tarder, rassurez-vous.", "wait": true },
                     { "do": "wait", "ms": 500 },
                     {
                       "do": "voice",
                       "character": "gisele",
                       "to": "sandrine",
                       "src": "assets/ah_merci.mp3",
+                      "subtitle": "Ah bon et bien merci.",
                       "wait": true
                     },
                     { "do": "wait", "ms": 500 },
@@ -443,7 +446,7 @@
       "sprite": "assets/deambulateur.png",
       "description": "Le déambulateur de Gisèle, rangé près du fauteuil.",
       "onUse": [
-        { "do": "voice", "src": "assets/deambulateur.mp3" },
+        { "do": "voice", "src": "assets/deambulateur.mp3", "subtitle": "Avec cette nouvelle version de mon déambulateur, je vais plus vite que la voiture de la directrice. Non. Enfin, ça, c'était dans mon rêve de cette nuit." },
         { "do": "say", "text": "Le déambulateur de Gisèle, rangé près du fauteuil." }
       ]
     },
@@ -454,7 +457,7 @@
       "sprite": "assets/plante_sol.png",
       "description": "Quelqu'un l'arrose régulièrement.",
       "onUse": [
-        { "do": "voice", "src": "assets/plante.mp3" },
+        { "do": "voice", "src": "assets/plante.mp3", "subtitle": "Oh, il faut vraiment que je pense à arroser cette plante. Euh, qu'est-ce que je disais déjà ? Oh, je ne sais plus. On verra plus tard." },
         { "do": "say", "text": "Quelqu'un l'arrose régulièrement." }
       ]
     },
@@ -483,7 +486,7 @@
             { "do": "say", "text": "La porte est ouverte sur le couloir de la résidence." }
           ],
           "else": [
-            { "do": "voice", "src": "assets/porte.mp3" },
+            { "do": "voice", "src": "assets/porte.mp3", "subtitle": "Cette porte, c'est ce qui sépare ma chambre du couloir où vit Sandrine, mon infirmière. Et oui, et j'en sais des choses." },
             { "do": "say", "text": "Derrière cette porte se trouve l'infirmière." }
           ]
         }
@@ -495,7 +498,7 @@
       "rect": [440, 408, 252, 190],
       "description": "Une commode en bois ciré, un napperon de dentelle.",
       "onUse": [
-        { "do": "voice", "src": "assets/commode.mp3" },
+        { "do": "voice", "src": "assets/commode.mp3", "subtitle": "Je n'aime pas cette commode. Elle n'a vraiment pas l'air très commode." },
         { "do": "say", "text": "Une commode en bois ciré, un napperon de dentelle." }
       ]
     }
