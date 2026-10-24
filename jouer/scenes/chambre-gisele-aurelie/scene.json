@@ -6,7 +6,7 @@
   "meta": {
     "act": "Acte 1",
     "chapter": "Chapitre I",
-    "notes": "Reprise de « chambre-gisele » pour la continuité : on entend « Coucou mamie » pendant le fondu depuis accueil-charmilles, puis Aurélie est déjà installée près de Gisèle à l'arrivée. Il fait nuit : l'extérieur derrière la fenêtre est assombri (fenetre_fermee.png modifié, la scène d'origine garde le crépuscule). Gisèle ne parle plus d'elle-même à l'entrée (pas de gisele_intro_chambre). Le bouton d'appel fonctionne encore (voyant + sonnette) mais Sandrine ne revient pas : Aurélie commente à la place. Ce sont les voix d'Aurélie qui répondent aux clics — fichiers assets/aurelie_*.mp3 à générer. La télévision reste éteinte (plus de séquence « gare »). La boîte en fer attend toujours sa clé."
+    "notes": "Reprise de « chambre-gisele » pour la continuité : Aurélie est déjà installée près de Gisèle à l'arrivée, puis elle dit « Coucou mamie ! » en voix (assets/coucou_mamie.mp3, bouche + sous-titre). Il fait nuit : l'extérieur derrière la fenêtre est assombri (fenetre_fermee.png modifié, la scène d'origine garde le crépuscule). Gisèle ne parle plus d'elle-même à l'entrée (pas de gisele_intro_chambre). Le bouton d'appel fonctionne encore (voyant + sonnette) mais Sandrine ne revient pas : Aurélie commente à la place. Ce sont les voix d'Aurélie qui répondent aux clics — fichiers assets/aurelie_*.mp3 à générer. La télévision reste éteinte (plus de séquence « gare »). La boîte en fer attend toujours sa clé."
   },
   "size": [1672, 941],
   "background": {
@@ -22,7 +22,8 @@
       "cond": { "not": { "var": "chambre-gisele-aurelie.entree" } },
       "then": [
         { "do": "set", "var": "chambre-gisele-aurelie.entree", "value": true },
-        { "do": "wait", "ms": 1500 },
+        { "do": "wait", "ms": 800 },
+        { "do": "voice", "character": "aurelie", "src": "assets/coucou_mamie.mp3", "subtitle": "Coucou mamie !", "wait": true },
         { "do": "objective", "complete": "rejoindre" }
       ]
     }
@@ -106,8 +107,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_fenetre.mp3",
-          "subtitle": "Toujours ce chantier du Clos du Moulin. Il n'a pas l'air d'avancer très vite."
+          "src": "assets/il_pleut.mp3",
+          "subtitle": "Il pleut."
         }
       ]
     },
@@ -122,7 +123,7 @@
           "do": "voice",
           "character": "aurelie",
           "src": "assets/aurelie_lit.mp3",
-          "subtitle": "Le lit est fait au carré, comme toujours chez mamie."
+          "subtitle": "Ce lit a des roues. Est-ce que mamie fait la course la nuit dans les couloirs ?"
         }
       ]
     },
@@ -181,7 +182,7 @@
           "do": "voice",
           "character": "aurelie",
           "src": "assets/aurelie_table_chevet.mp3",
-          "subtitle": "Sa table de chevet, à portée de main du lit."
+          "subtitle": "Je suis sûr que si je fouille, je vais trouver du chocolat là-dedans."
         }
       ]
     },
@@ -195,8 +196,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_lampe.mp3",
-          "subtitle": "La lampe est restée allumée, elle éclaire doucement la chambre."
+          "src": "assets/lampe.mp3",
+          "subtitle": "Abracadabra, éteins-toi. Bah non, ça ne marche pas."
         }
       ]
     },
@@ -210,8 +211,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_pilulier.mp3",
-          "subtitle": "Le pilulier, un compartiment par jour. Elle est bien organisée, mamie."
+          "src": "assets/pilulier.mp3",
+          "subtitle": "Tiens, le pilulier est vide. Bizarre."
         }
       ]
     },
@@ -252,8 +253,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_photo.mp3",
-          "subtitle": "Une jeune femme devant un moulin. Au dos, il est écrit « Rose ». Je ne sais pas qui c'est."
+          "src": "assets/photo.mp3",
+          "subtitle": "Je pourrais mettre une photo comme cela dans mon bus ?"
         }
       ]
     },
@@ -287,8 +288,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_horloge.mp3",
-          "subtitle": "L'horloge s'est arrêtée. Depuis quand ?"
+          "src": "assets/horloge_pile.mp3",
+          "subtitle": "Il faudrait que je demande à mamie pourquoi elle enlève toujours les piles de cette horloge."
         }
       ]
     },
@@ -302,8 +303,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_calendrier.mp3",
-          "subtitle": "Novembre 2026. Le temps passe vite."
+          "src": "assets/calendrier.mp3",
+          "subtitle": "Novembre 2036."
         }
       ]
     },
@@ -317,8 +318,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_tableau.mp3",
-          "subtitle": "Le menu et les animations de la semaine aux Charmilles."
+          "src": "assets/tableau.mp3",
+          "subtitle": "Il manque à 18h30 : arrivée Dorélie."
         }
       ]
     },
@@ -351,7 +352,14 @@
           "do": "if",
           "cond": { "state": "bouton", "eq": "allume" },
           "then": [
-            { "do": "wait", "ms": 1500 },
+            { "do": "wait", "ms": 1200 },
+            {
+              "do": "voice",
+              "character": "sandrine",
+              "src": "assets/stop_sonette.mp3",
+              "subtitle": "Aurélie, je vous entends. Pourriez-vous arrêter de jouer avec la sonnette, s'il vous plaît ?",
+              "wait": true
+            },
             {
               "do": "voice",
               "character": "aurelie",
@@ -372,8 +380,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_deambulateur.mp3",
-          "subtitle": "Le déambulateur de mamie, rangé près du fauteuil."
+          "src": "assets/deambulateur.mp3",
+          "subtitle": "Non, je ne toucherai pas à ça, c'est dangereux. La dernière fois, je suis tombée avec."
         }
       ]
     },
@@ -387,8 +395,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_plante.mp3",
-          "subtitle": "Quelqu'un arrose cette plante régulièrement."
+          "src": "assets/plante.mp3",
+          "subtitle": "La seule plante du coin, en plastique."
         }
       ]
     },
@@ -413,8 +421,8 @@
             {
               "do": "voice",
               "character": "aurelie",
-              "src": "assets/aurelie_porte.mp3",
-              "subtitle": "Derrière cette porte, le couloir qui mène à l'accueil."
+              "src": "assets/porte.mp3",
+              "subtitle": "Je viens juste d'arriver, je ne vais pas déjà repartir."
             }
           ]
         }
@@ -429,8 +437,8 @@
         {
           "do": "voice",
           "character": "aurelie",
-          "src": "assets/aurelie_commode.mp3",
-          "subtitle": "Une commode en bois ciré, avec son napperon de dentelle."
+          "src": "assets/commode.mp3",
+          "subtitle": "Mamie adore cette commode que je lui ai offerte."
         }
       ]
     },

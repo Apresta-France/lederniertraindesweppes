@@ -23,7 +23,7 @@
       "character": "aurelie",
       "to": "sandrine",
       "src": "assets/bonsoir.mp3",
-      "subtitle": "Bonsoir, je suis Aurélie Desmet. Je viens voir ma grand-mère Gisèle Desmet.",
+      "subtitle": "Euh bonsoir. Je suis Aurélie Desmet. Je viens voir ma grand-mère Gisèle Desmet.",
       "wait": true
     },
     { "do": "wait", "ms": 500 },
@@ -181,7 +181,7 @@
               "character": "sandrine",
               "to": "aurelie",
               "src": "assets/hein.mp3",
-              "subtitle": "Hein ? Quoi ? Bonsoir. Ah, Aurélie, Gisèle vous attend. Désolée, j'étais en train de préparer la liste des courses pour les repas de la semaine. Je vous laisse y aller.",
+              "subtitle": "Hein ? Quoi ? Euh… euh… Bonsoir. Ah, Aurélie, Gisèle vous attend. Désolée, j'étais en train de… euh… de préparer la liste des courses pour les repas de la semaine. Je vous laisse y aller.",
               "wait": true
             },
             { "do": "set", "var": "accueil-charmilles.autorisee", "value": true },
@@ -202,7 +202,7 @@
           "do": "voice",
           "character": "aurelie",
           "src": "assets/bouteille.mp3",
-          "subtitle": "Il faut se laver les mains et les pieds cinq fois par jour. Ah non ! Ça, c'est les fruits et légumes !"
+          "subtitle": "Il faut se laver les mains et les pieds cinq fois par jour. Ah non ! Ça, c'est les fruits et légumes."
         }
       ]
     },
@@ -265,7 +265,7 @@
           "do": "voice",
           "character": "aurelie",
           "src": "assets/comptoir.mp3",
-          "subtitle": "Je me demande dans quel bois est fabriqué ce magnifique comptoir."
+          "subtitle": "Je me demande de quel bois est fabriqué ce magnifique comptoir."
         }
       ]
     },
@@ -292,7 +292,6 @@
             },
             { "do": "objective", "complete": "entrer" },
             { "do": "fadeOut", "ms": 1400 },
-            { "do": "sfx", "src": "assets/coucou_mamie.mp3" },
             { "do": "goto", "scene": "chambre-gisele-aurelie" }
           ],
           "else": [
