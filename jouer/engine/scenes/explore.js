@@ -825,6 +825,21 @@ export class ExploreScene extends Scene {
     } else if (others.length && el.previousSibling !== others[others.length - 1]) {
       parent.insertBefore(el, others[others.length - 1].nextSibling);
     }
+    // Les calques dont la base descend plus bas que ses pieds doivent la recouvrir :
+    // le groupe « premier plan » est regroupé juste après elle, dans son ordre posé
+    // (le DOM n'est pas trié par profondeur : sans cela ils repasseraient devant).
+    let anchor = el;
+    for (const n of others) {
+      if (baseline(n) <= feet) continue;
+      if (n.previousSibling !== anchor) parent.insertBefore(n, anchor.nextSibling);
+      anchor = n;
+    }
+    // Réciproque : un calque « fond » posé loin devant dans le fichier (ex. commode)
+    // la recouvrirait encore — tout ce qui reste après elle repasse derrière.
+    for (const n of others) {
+      if (baseline(n) > feet) continue;
+      if (el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING) parent.insertBefore(n, el);
+    }
   }
 
   restoreObjectOrder() {
