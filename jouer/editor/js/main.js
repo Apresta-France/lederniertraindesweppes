@@ -5,6 +5,7 @@ import { SceneList } from './scene-list.js';
 import { Inspector } from './inspector.js';
 import { SceneProps } from './scene-props.js';
 import { JsonTab } from './json-tab.js';
+import { DialoguesTab } from './dialogues.js';
 import { SoundsTab } from './sounds.js';
 import { GalleryTab } from './gallery.js';
 import { ExploreEditor } from './explore-editor.js';
@@ -36,7 +37,7 @@ const ui = {
   banner: $('banner'),
   newScene: $('btn-new-scene'),
   tabs: [...document.querySelectorAll('[role="tab"]')],
-  panels: { visual: $('panel-visual'), scene: $('panel-scene'), sounds: $('panel-sounds'), gallery: $('panel-gallery'), json: $('panel-json') },
+  panels: { visual: $('panel-visual'), scene: $('panel-scene'), dialogues: $('panel-dialogues'), sounds: $('panel-sounds'), gallery: $('panel-gallery'), json: $('panel-json') },
   validation: $('validation'),
   validationSummary: $('validation-summary'),
   validationList: $('validation-list'),
@@ -87,6 +88,7 @@ const sceneList = new SceneList({
 new Inspector({ store, container: $('inspector'), ctx });
 new SceneProps({ store, container: ui.panels.scene, ctx });
 const jsonTab = new JsonTab({ store, container: ui.panels.json });
+const dialoguesTab = new DialoguesTab({ store, container: ui.panels.dialogues, ctx });
 const soundsTab = new SoundsTab({ store, container: ui.panels.sounds, library });
 const galleryTab = new GalleryTab({
   store,

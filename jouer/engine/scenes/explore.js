@@ -31,7 +31,7 @@ function inferredCursor(def) {
   const has = (name) => all.some((action) => action.do === name);
   if (def.walkTo) return 'marcher';
   if (has('take')) return 'prendre';
-  if (def.character || top.some((action) => action.do === 'voice' && action.character)) return 'parler';
+  if (def.character || has('dialogue') || top.some((action) => action.do === 'voice' && action.character)) return 'parler';
   if (has('cycleState') || has('setState') || has('goto')) return 'montrer';
   if (has('examine') || has('say') || def.description) return 'loupe';
   if (all.length) return 'montrer';
@@ -326,6 +326,10 @@ export class ExploreScene extends Scene {
           <div class="room-sub"><span class="who"></span><span class="txt"></span></div>
           <div class="room-say"><span class="who"></span><span class="txt"></span></div>
         </div>
+        <div class="room-dlg room-ui" hidden>
+          <div class="room-dlg-head"><span class="room-dlg-who"></span><span class="room-dlg-prompt"></span></div>
+          <div class="room-dlg-opts" role="group" aria-label="Sujets de conversation"></div>
+        </div>
         <div class="room-tip" aria-hidden="true"></div>
         <div class="room-dbgxy" aria-hidden="true"></div>
       </div>`;
@@ -373,6 +377,7 @@ export class ExploreScene extends Scene {
       if (e.key !== 'Escape' || e.repeat) return;
       e.stopPropagation();
       if (this.overlay.isOpen) this.overlay.close();
+      else if (this.dlg) this.endDialogue();
       else if (this.invOpen) this.toggleInventory(false);
       else { this.game.audio.ui('select'); this.showPause(); }
     }, true);
@@ -409,6 +414,17 @@ export class ExploreScene extends Scene {
       this.say(it.name, it.desc);
     });
     $('.room-card').addEventListener('click', e => this.onCardClick(e));
+    const dlgBox = $('.room-dlg');
+    dlgBox.addEventListener('click', e => this.onDlgClick(e));
+    dlgBox.addEventListener('keydown', e => {
+      const step = { ArrowDown: 1, ArrowUp: -1 }[e.key];
+      if (!step) return;
+      const btns = [...dlgBox.querySelectorAll('.room-dlg-opt')];
+      const i = btns.indexOf(document.activeElement);
+      if (i < 0) return;
+      e.preventDefault();
+      btns[(i + step + btns.length) % btns.length].focus();
+    });
     $('.room-card').addEventListener('keydown', e => {
       const tab = e.target.closest('[role="tab"]');
       const step = { ArrowRight: 1, ArrowLeft: -1, Home: -Infinity, End: Infinity }[e.key];
@@ -444,6 +460,7 @@ export class ExploreScene extends Scene {
       Object.values(this.anims).forEach(st => st.done());
       Object.values(this.sounds).forEach(h => h.stop());
       this.speaking?.handle.stop();
+      this.endDialogue();
     });
 
     for (const o of this.objects) {
@@ -1175,6 +1192,142 @@ export class ExploreScene extends Scene {
       ended();
     };
     if (a.wait) return done;
+  }
+
+  // ---- Dialogues ----
+
+  // Interlocuteur : l'objet cliqué s'il porte un personnage, sinon celui nommé par le dialogue.
+  dialoguePartner(def, ctx) {
+    if (ctx.object?.character) return ctx.object;
+    return this.objects.find(o => o.character === def.character) || null;
+  }
+
+  // Le personnage joué : le champ « player » du dialogue, sinon celui que les zones de sol déplacent.
+  dialoguePlayer(def, partner) {
+    const named = def.player ? this.objects.find(o => o.id === def.player || o.character === def.player) : null;
+    return named || this.objects.find(o => o?.character && o.id !== partner?.id && this.mover(o.id)) || null;
+  }
+
+  // Variable qui garde « ce sujet a déjà été abordé » ; utilisable dans when et cond.
+  topicKey(dlgId, topic, index) {
+    return `dlg.${this.id}.${dlgId}.${topic?.id || `t${index}`}`;
+  }
+
+  // Répliques prêtes pour runActions : une voice attend sa fin et s'adresse à l'autre
+  // partie quand « to » n'est pas écrit ; un say est suivi d'une pause de sa durée.
+  dialogueLines(list, partner, player) {
+    if (!Array.isArray(list)) return [];
+    const out = [];
+    for (const line of list) {
+      if (!line || typeof line !== 'object') continue;
+      if (line.do === 'voice' && line.character) {
+        const other = line.character === partner?.character ? player?.character : partner?.character;
+        out.push({ ...line, wait: line.wait ?? true, ...(line.to || !other ? {} : { to: other }) });
+        continue;
+      }
+      out.push(line);
+      if (line.do === 'say' && line.wait !== false) {
+        const text = line.byState ? line.texts?.[this.objectState(line.byState)] : line.text;
+        out.push({ do: 'wait', ms: line.waitMs ?? (2600 + String(text || '').length * 45) });
+      }
+    }
+    return out;
+  }
+
+  setTopicsOpen(open) {
+    const box = this.el?.querySelector('.room-dlg');
+    if (box) box.hidden = !open;
+    const spots = this.el?.querySelector('.room-hotspots');
+    if (spots) spots.inert = open;
+    this.frame?.classList.toggle('dlg-open', open);
+  }
+
+  // Menu des sujets en bas de l'image : renvoie le sujet choisi, ou null quand on part.
+  showTopics(def, list, keyOf) {
+    const box = this.el.querySelector('.room-dlg');
+    const c = def.character ? this.character(def.character) : null;
+    box.querySelector('.room-dlg-who').textContent = def.title || c?.name || '';
+    const prompt = box.querySelector('.room-dlg-prompt');
+    prompt.textContent = def.prompt || '';
+    prompt.hidden = !def.prompt;
+    box.querySelector('.room-dlg-opts').innerHTML =
+      list.map(({ topic, index }, n) =>
+        `<button type="button" class="room-dlg-opt${this.game.state.get(keyOf(topic, index)) ? ' asked' : ''}" data-dlg="${n}">${esc(topic.label || '…')}</button>`
+      ).join('') +
+      `<button type="button" class="room-dlg-opt bye" data-dlg="bye">${esc(def.bye || 'C’est tout pour le moment.')}</button>`;
+    return new Promise(resolve => {
+      this.dlg = { resolve, list };
+      this.setTopicsOpen(true);
+      this.announce([def.title || c?.name, def.prompt,
+        ...list.map(({ topic }) => topic.label), def.bye].filter(Boolean).join('. '));
+      (box.querySelector('.room-dlg-opt:not(.asked)') || box.querySelector('.room-dlg-opt'))?.focus();
+    });
+  }
+
+  onDlgClick(e) {
+    const btn = e.target.closest('[data-dlg]');
+    if (!btn || !this.dlg) return;
+    const { resolve, list } = this.dlg;
+    this.dlg = null;
+    this.game.audio.ui('click');
+    this.setTopicsOpen(false);
+    resolve(btn.dataset.dlg === 'bye' ? null : list[+btn.dataset.dlg] ?? null);
+  }
+
+  // Échap, « bye » ou démontage : la conversation s'arrête.
+  endDialogue() {
+    if (!this.dlg) return;
+    const { resolve } = this.dlg;
+    this.dlg = null;
+    this.setTopicsOpen(false);
+    resolve(null);
+  }
+
+  // dialogue { id } : menu des sujets, échanges (voix + sous-titres), puis déblocages.
+  // def : { character, title?, prompt?, bye?, player?, empty?: actions, onLeave?: actions,
+  //         topics: [{ id?, label, when?, once?, end?, lines: actions, then?: actions }] }
+  async openDialogue(a, ctx = {}) {
+    const def = this.data.dialogues?.[a.id];
+    if (!def || !Array.isArray(def.topics) || this.dlg || this.dlgRunning || this.overlay.isOpen) return;
+    const partner = this.dialoguePartner(def, ctx);
+    const player = this.dialoguePlayer(def, partner);
+    const actx = { ...ctx, object: partner ?? ctx.object };
+    const condCtx = { game: this.game, scene: this };
+    const keyOf = (t, i) => this.topicKey(a.id, t, i);
+    const visible = () => def.topics
+      .map((topic, index) => ({ topic, index }))
+      .filter(({ topic, index }) => topic && typeof topic === 'object'
+        && (!topic.once || !this.game.state.get(keyOf(topic, index)))
+        && test(topic.when, condCtx));
+
+    this.dlgRunning = true;
+    this.dlgReturnTo = document.activeElement;
+    this.hideSay();
+    this.tip.classList.remove('on');
+    try {
+      while (!this.disposed) {
+        const list = visible();
+        if (!list.length) {
+          await this.run(this.dialogueLines(def.empty, partner, player), actx);
+          break;
+        }
+        const pick = await this.showTopics(def, list, keyOf);
+        if (pick == null || this.disposed) break;
+        this.game.state.set(keyOf(pick.topic, pick.index), true);
+        await this.run(this.dialogueLines(pick.topic.lines, partner, player), actx);
+        if (this.disposed) break;
+        await this.run(this.dialogueLines(pick.topic.then, partner, player), actx);
+        if (pick.topic.end) break;
+      }
+    } finally {
+      this.dlgRunning = false;
+      this.dlg = null;
+      this.setTopicsOpen(false);
+      const back = this.dlgReturnTo;
+      this.dlgReturnTo = null;
+      if (back?.isConnected) back.focus();
+    }
+    if (!this.disposed) await this.run(this.dialogueLines(def.onLeave, partner, player), actx);
   }
 
   // ---- HUD ----

@@ -63,6 +63,7 @@ header('Cache-Control: no-store');
             <div class="tabs" role="tablist" aria-label="Vues de la scène">
                 <button type="button" role="tab" id="tab-visual" aria-controls="panel-visual" aria-selected="true">Visuel</button>
                 <button type="button" role="tab" id="tab-scene" aria-controls="panel-scene" aria-selected="false" tabindex="-1">Scène</button>
+                <button type="button" role="tab" id="tab-dialogues" aria-controls="panel-dialogues" aria-selected="false" tabindex="-1">Dialogues</button>
                 <button type="button" role="tab" id="tab-sounds" aria-controls="panel-sounds" aria-selected="false" tabindex="-1">Sons</button>
                 <button type="button" role="tab" id="tab-gallery" aria-controls="panel-gallery" aria-selected="false" tabindex="-1">Galerie</button>
                 <button type="button" role="tab" id="tab-json" aria-controls="panel-json" aria-selected="false" tabindex="-1">JSON</button>
@@ -71,6 +72,7 @@ header('Cache-Control: no-store');
                 <p class="empty">Choisissez une scène dans la liste.</p>
             </section>
             <section id="panel-scene" class="panel panel-scroll" role="tabpanel" aria-labelledby="tab-scene" hidden></section>
+            <section id="panel-dialogues" class="panel panel-dialogues" role="tabpanel" aria-labelledby="tab-dialogues" hidden></section>
             <section id="panel-sounds" class="panel panel-sounds" role="tabpanel" aria-labelledby="tab-sounds" hidden></section>
             <section id="panel-gallery" class="panel panel-gallery" role="tabpanel" aria-labelledby="tab-gallery" hidden></section>
             <section id="panel-json" class="panel panel-json" role="tabpanel" aria-labelledby="tab-json" hidden></section>

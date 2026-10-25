@@ -106,6 +106,7 @@ registerAction('fadeOut', (a, ctx) => {
   if (a.music !== false) ctx.game.audio.music.stop(ms);
   return ctx.scene?.fadeOut?.(ms);
 });
+registerAction('dialogue', (a, ctx) => ctx.scene?.openDialogue?.(a, ctx));
 registerAction('menu', (a, ctx) => ctx.game.shell.toMenu());
 registerAction('wait', (a, ctx) => ctx.scene.sleep(a.ms ?? 0));
 

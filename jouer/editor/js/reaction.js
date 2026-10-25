@@ -12,6 +12,7 @@ const MODES = [
   ['sound', 'Jouer un son'],
   ['say-sound', 'Dire un texte et jouer un son'],
   ['voice', 'Jouer une voix'],
+  ['dialogue', 'Parler : menu de sujets'],
   ['custom', 'Actions personnalisées'],
 ];
 
@@ -22,6 +23,7 @@ const MODE_HELP = {
   sound: 'Le clic joue le son choisi. Un fichier peut avoir une légende.',
   'say-sound': 'Le clic joue le son, puis dit le texte.',
   voice: 'Le clic joue le fichier. La légende s’affiche pendant la réplique.',
+  dialogue: 'Le clic ouvre le menu des sujets à aborder : questions, réponses, puis déblocages. Les échanges se règlent dans l’onglet Dialogues.',
   custom: 'Chaque action se règle dans la liste. Le menu en ajoute une.',
 };
 
@@ -49,6 +51,10 @@ function isVoice(action) {
   return action?.do === 'voice' && !action.pool && !action.pick && allowed(action, ['do', 'src', 'subtitle', 'character', 'wait']);
 }
 
+function isDialogue(action) {
+  return action?.do === 'dialogue' && allowed(action, ['do', 'id']);
+}
+
 export function reactionKind(object) {
   const list = listOf(object);
   if (list === null) {
@@ -62,6 +68,7 @@ export function reactionKind(object) {
   if (list.length === 1 && (isBuiltinSfx(list[0]) || isFileSfx(list[0]))) return 'sound';
   if (list.length === 2 && (isBuiltinSfx(list[0]) || isFileSfx(list[0])) && isPlainSay(list[1])) return 'say-sound';
   if (list.length === 1 && isVoice(list[0])) return 'voice';
+  if (list.length === 1 && isDialogue(list[0])) return 'dialogue';
   return 'custom';
 }
 
@@ -148,6 +155,9 @@ export function reactionEditor(scope, index, { showWalk = false } = {}) {
   const legendWrap = h('div', { class: 'field' }, h('label', null, 'Légende'), legend, legendHelp);
   const actions = actionsField(scope, { label: 'Actions', path: [...base, 'onUse'], rows: 8 });
   const customWrap = h('div', { hidden: true }, actions);
+  const dlg = h('select', { 'aria-label': 'Dialogue ouvert au clic' });
+  const dlgHelp = h('p', { class: 'help' });
+  const dlgWrap = h('div', { class: 'field', hidden: true }, h('label', null, 'Dialogue'), dlg, dlgHelp);
   const walk = scope.select({
     label: 'Y emmener',
     path: [...base, 'walkTo'],
@@ -190,7 +200,7 @@ export function reactionEditor(scope, index, { showWalk = false } = {}) {
   box.append(
     h('legend', null, 'Au clic'),
     h('div', { class: 'field' }, h('label', { for: modeId }, 'Comportement'), mode),
-    help, textWrap, soundWrap, fileWrap, legendWrap, walk, customWrap,
+    help, textWrap, soundWrap, fileWrap, legendWrap, dlgWrap, walk, customWrap,
   );
 
   let locking = false;
@@ -207,7 +217,7 @@ export function reactionEditor(scope, index, { showWalk = false } = {}) {
     const object = objectNow();
     const textValue = rememberedText(object);
     const choice = usesFile(object, previous) ? 'file' : builtinName(object);
-    patch(`react-mode:${index}:${Date.now()}`, (obj) => {
+    patch(`react-mode:${index}:${Date.now()}`, (obj, scene) => {
       if (next === 'none') {
         delete obj.onUse;
         delete obj.description;
@@ -225,6 +235,10 @@ export function reactionEditor(scope, index, { showWalk = false } = {}) {
       else if (next === 'voice') {
         const src = fileAction(object)?.src || (listOf(object) || []).find((action) => action?.do === 'voice')?.src || '';
         obj.onUse = [{ do: 'voice', src }];
+      } else if (next === 'dialogue') {
+        const known = object.onUse?.find?.((action) => action?.do === 'dialogue')?.id;
+        const first = Object.keys(scene?.dialogues || {})[0];
+        obj.onUse = [{ do: 'dialogue', id: known || first || '' }];
       } else if (next === 'custom') {
         if (!Array.isArray(obj.onUse) || obj.onUse.length === 0) {
           obj.onUse = textValue ? [{ do: 'say', text: textValue }] : [];
@@ -313,6 +327,11 @@ export function reactionEditor(scope, index, { showWalk = false } = {}) {
   text.addEventListener('input', () => commitText(text.value));
   sound.addEventListener('change', () => commitSound(sound.value));
   legend.addEventListener('input', () => commitLegend(legend.value));
+  dlg.addEventListener('change', () => {
+    patch(`react-dlg:${index}:${Date.now()}`, (obj) => {
+      if (obj.onUse?.[0]?.do === 'dialogue') obj.onUse[0].id = dlg.value;
+    });
+  });
 
   function readLegend(object, kind) {
     const voice = (listOf(object) || [])[0];
@@ -330,6 +349,7 @@ export function reactionEditor(scope, index, { showWalk = false } = {}) {
     const object = objectNow();
     const kind = forceCustom ? 'custom' : reactionKind(object);
     const file = usesFile(object, kind);
+    const disabled = scope.readOnly;
     mode.value = kind;
     help.textContent = MODE_HELP[kind];
     textWrap.hidden = !['examine', 'say', 'say-sound'].includes(kind);
@@ -338,12 +358,27 @@ export function reactionEditor(scope, index, { showWalk = false } = {}) {
     legendWrap.hidden = !file;
     customWrap.hidden = kind !== 'custom';
     walk.hidden = !showWalk && !object.walkTo;
+    dlgWrap.hidden = kind !== 'dialogue';
+    if (kind === 'dialogue') {
+      const ids = Object.keys(scope.store.scene?.dialogues || {});
+      const current = (listOf(object) || [])[0]?.id || '';
+      const known = current === '' || ids.includes(current);
+      dlg.replaceChildren(
+        h('option', { value: '' }, ids.length ? '(à choisir)' : '(aucun dialogue dans la scène)'),
+        ...ids.map((id) => h('option', { value: id }, id)),
+        known ? null : h('option', { value: current }, `${current} (inconnu)`),
+      );
+      dlg.value = current;
+      dlgHelp.textContent = ids.length
+        ? 'Sujets et répliques : onglet Dialogues.'
+        : 'Créez d’abord un dialogue dans l’onglet Dialogues.';
+      dlg.disabled = disabled || !ids.length;
+    }
     if (document.activeElement !== text) text.value = readText(object, kind);
     if (document.activeElement !== legend) legend.value = readLegend(object, kind);
     if (document.activeElement !== sound) sound.value = file && kind !== 'voice' ? 'file' : builtinName(object);
     const src = kind === 'voice' ? ((listOf(object) || [])[0]?.src || '') : (fileAction(object)?.src || '');
     asset.setValue(src);
-    const disabled = scope.readOnly;
     mode.disabled = disabled;
     text.readOnly = disabled;
     sound.disabled = disabled;

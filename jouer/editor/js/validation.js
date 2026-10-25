@@ -63,6 +63,7 @@ function validateSoundLegends(scene, { warn, info }) {
 function validateExplore(scene, ctx, { warn, info, checkFile, checkScene }) {
   const objects = Array.isArray(scene.objects) ? scene.objects : [];
   const panels = isObj(scene.panels) ? scene.panels : {};
+  const dialogues = isObj(scene.dialogues) ? scene.dialogues : {};
   const objectives = isObj(scene.objectives) ? scene.objectives : {};
   const byId = new Map();
   const [width, height] = Array.isArray(scene.size) ? scene.size : [0, 0];
@@ -151,6 +152,7 @@ function validateExplore(scene, ctx, { warn, info, checkFile, checkScene }) {
       if (action.do === 'say' && action.byState && !byId.has(action.byState)) warn(`${where} : say.byState vise un objet inconnu « ${action.byState} ».`, selection);
       if (ITEM_ACTIONS.has(action.do) && ctx.items && action.item !== undefined && !(action.item in ctx.items)) warn(`${where} : objet d’inventaire inconnu « ${action.item} » (items.json).`, selection);
       if (action.do === 'examine' && !(action.panel in panels)) warn(`${where} : fiche d’examen inconnue « ${action.panel} ».`, selection);
+      if (action.do === 'dialogue' && !(action.id in dialogues)) warn(`${where} : dialogue inconnu « ${action.id} » (onglet Dialogues).`, selection);
       if (action.do === 'goto') checkScene(action.scene, where, selection);
       if (action.do === 'objective') {
         for (const key of ['set', 'complete']) {
@@ -196,6 +198,28 @@ function validateExplore(scene, ctx, { warn, info, checkFile, checkScene }) {
     (Array.isArray(panel.actions) ? panel.actions : []).forEach((action) => {
       checkCondition(action?.when, where, null);
       checkActions(action?.do, where, null);
+    });
+  }
+  for (const [id, dlg] of Object.entries(dialogues)) {
+    if (!isObj(dlg)) continue;
+    const where = `Dialogue « ${id} »`;
+    if (dlg.character && !ctx.characters.includes(dlg.character)) warn(`${where} : personnage inconnu « ${dlg.character} ».`);
+    if (dlg.player && !byId.has(dlg.player) && !ctx.characters.includes(dlg.player)) warn(`${where} : « player » inconnu « ${dlg.player} ».`);
+    checkActions(dlg.empty, `${where}, plus rien à demander`, null);
+    checkActions(dlg.onLeave, `${where}, en partant`, null);
+    if (!Array.isArray(dlg.topics) || !dlg.topics.length) warn(`${where} : aucun sujet.`);
+    const seenTopics = new Set();
+    (Array.isArray(dlg.topics) ? dlg.topics : []).forEach((topic, i) => {
+      if (!isObj(topic)) return;
+      const twhere = `${where}, sujet « ${topic.label || topic.id || i + 1} »`;
+      if (typeof topic.label !== 'string' || !topic.label.trim()) warn(`${twhere} : libellé vide.`);
+      if (topic.id) {
+        if (seenTopics.has(topic.id)) warn(`${where} : repère de sujet en double « ${topic.id} ».`);
+        seenTopics.add(topic.id);
+      }
+      checkCondition(topic.when, twhere, null);
+      checkActions(topic.lines, twhere, null);
+      checkActions(topic.then, `${twhere}, ensuite`, null);
     });
   }
   if (!objects.length) info('La scène ne contient encore aucun objet.');

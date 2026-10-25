@@ -28,6 +28,7 @@ export const ACTIONS = [
   { do: 'fadeOut', label: 'Assombrir la scène', help: 'ms : durée du fondu au noir (1500 par défaut) ; music : false pour garder la musique.', template: { do: 'fadeOut', ms: 1500 } },
   { do: 'wait', label: 'Attendre', help: 'ms : durée en millisecondes.', template: { do: 'wait', ms: 1000 } },
   { do: 'if', label: 'Condition', help: 'cond : condition ; then : actions si vraie ; else : actions sinon (facultatif).', template: { do: 'if', cond: { var: '', eq: true }, then: [], else: [] } },
+  { do: 'dialogue', label: 'Ouvrir un dialogue', help: 'id : identifiant dans « dialogues » (onglet Dialogues). Affiche le menu des sujets : chaque choix joue un échange (voix, sous-titres) puis ses déblocages.', template: { do: 'dialogue', id: '' } },
   { do: 'menu', label: 'Retour au menu', help: 'aucun paramètre : revient au menu principal du jeu.', template: { do: 'menu' } },
 ];
 

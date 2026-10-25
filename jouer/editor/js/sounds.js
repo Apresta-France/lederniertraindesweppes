@@ -87,6 +87,18 @@ export function collectSounds(scene) {
     }
   }
 
+  for (const [id, dlg] of Object.entries(isObj(scene.dialogues) ? scene.dialogues : {})) {
+    if (!isObj(dlg)) continue;
+    const where = `Dialogue « ${dlg.title || id} »`;
+    walkActions(dlg.empty, `${where} · plus rien à demander`);
+    walkActions(dlg.onLeave, `${where} · en partant`);
+    for (const topic of Array.isArray(dlg.topics) ? dlg.topics : []) {
+      const t = topic?.label || topic?.id || 'sujet';
+      walkActions(topic?.lines, `${where} · « ${t} »`);
+      walkActions(topic?.then, `${where} · « ${t} », ensuite`);
+    }
+  }
+
   for (const item of Array.isArray(scene.timeline) ? scene.timeline : []) {
     if (isObj(item) && item.do === 'music' && item.src) add(item.src, 'musique', 'Musique de la cinématique');
   }

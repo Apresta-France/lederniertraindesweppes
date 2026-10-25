@@ -148,28 +148,7 @@
       "rect": [1126, 346, 184, 351],
       "character": "gisele",
       "bubble": [1218, 330],
-      "onUse": [
-        {
-          "do": "voice",
-          "character": "aurelie",
-          "to": "gisele",
-          "src": "assets/aurelie_parle_gisele.mp3",
-          "subtitle": "Comment tu te sens aujourd'hui, mamie ?",
-          "wait": true
-        },
-        { "do": "voice", "character": "gisele", "pool": "touch", "pick": "random" },
-        { "do": "inc", "var": "chambre-gisele-aurelie.conversations" },
-        {
-          "do": "if",
-          "cond": { "var": "chambre-gisele-aurelie.conversations", "gte": 3 },
-          "then": [
-            {
-              "do": "note",
-              "text": "Gisèle se souvient de la gare de Fournes. Le dernier train passait « au weppe »."
-            }
-          ]
-        }
-      ]
+      "onUse": [{ "do": "dialogue", "id": "gisele" }]
     },
     {
       "id": "chevet",
@@ -491,6 +470,57 @@
           ]
         },
         { "label": "Reposer", "style": "ghost", "do": [{ "do": "close" }] }
+      ]
+    }
+  },
+  "dialogues": {
+    "gisele": {
+      "character": "gisele",
+      "prompt": "Que veux-tu demander à mamie ?",
+      "bye": "C'est tout pour le moment, mamie.",
+      "topics": [
+        {
+          "id": "sante",
+          "label": "« Comment tu te sens aujourd'hui ? »",
+          "lines": [
+            {
+              "do": "voice",
+              "character": "aurelie",
+              "to": "gisele",
+              "src": "assets/aurelie_parle_gisele.mp3",
+              "subtitle": "Comment tu te sens aujourd'hui, mamie ?"
+            },
+            { "do": "voice", "character": "gisele", "pool": "touch", "pick": "random" }
+          ],
+          "then": [
+            { "do": "inc", "var": "chambre-gisele-aurelie.conversations" },
+            {
+              "do": "if",
+              "cond": { "var": "chambre-gisele-aurelie.conversations", "gte": 3 },
+              "then": [
+                {
+                  "do": "note",
+                  "text": "Gisèle se souvient de la gare de Fournes. Le dernier train passait « au weppe »."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "boite",
+          "label": "« Tu sais où est la clé de ta boîte en fer ? »",
+          "when": { "var": "chambre-gisele-aurelie.boite-essayee" },
+          "lines": [
+            { "do": "say", "who": "Aurélie", "text": "Mamie, tu sais où est la clé de ta boîte en fer ?" },
+            { "do": "say", "who": "Gisèle", "text": "La clé… Elle doit traîner quelque part. Tout se perd, dans cette chambre." }
+          ],
+          "then": [
+            {
+              "do": "note",
+              "text": "La clé de la boîte en fer est égarée. Gisèle ne sait plus où elle est."
+            }
+          ]
+        }
       ]
     }
   }

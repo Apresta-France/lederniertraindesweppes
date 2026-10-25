@@ -85,7 +85,7 @@ img.room-obj{transform:scaleX(var(--flip,1))}
 .room-badge{position:absolute;right:-.3cqw;top:-.3cqw;min-width:max(16px,1.3cqw);height:max(16px,1.3cqw);box-sizing:border-box;padding:0 .3cqw;border-radius:999px;background:#c0392b;color:#fff;font-size:max(10px,.75cqw);display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.5)}
 .room-badge.on{display:flex}
 .room-ui button:focus-visible{outline:2px solid #ffe2a8;outline-offset:2px}
-.room-objective,.room-menu,.room-tool,.room-btn,.room-x,.room-tab,.room-opt,.room-memory,.room-range input{cursor:var(--cur-montrer)}
+.room-objective,.room-menu,.room-tool,.room-btn,.room-x,.room-tab,.room-opt,.room-memory,.room-range input,.room-dlg-opt{cursor:var(--cur-montrer)}
 .room-slot.full{cursor:var(--cur-loupe)}
 /* Scène occupée (actions en cours, personnage qui parle) : seuls le menu, l'inventaire et l'objectif restent actifs */
 .room-carnet,.room-map,.room-help,.room-slot{transition:opacity .3s,border-color .2s,background .2s,transform .2s}
@@ -108,6 +108,22 @@ img.room-obj{transform:scaleX(var(--flip,1))}
 .room-talk i{width:.38cqw;height:.38cqw;border-radius:50%;background:#d9b77a;animation:room-talk-dot 1s ease-in-out infinite}
 .room-talk i:nth-of-type(2){animation-delay:.15s}.room-talk i:nth-of-type(3){animation-delay:.3s}
 .room-talk.on{opacity:1}
+
+/* Dialogue : le menu des sujets, en bas de l'image, la scène reste visible */
+.room-dlg{position:absolute;left:50%;bottom:2.4cqw;transform:translateX(-50%);z-index:4;width:min(56%,860px);max-height:46%;display:flex;flex-direction:column;gap:.6cqw;padding:1.1cqw 1.3cqw;box-sizing:border-box;background:linear-gradient(180deg,rgba(44,32,22,.96),rgba(22,16,11,.97));border:1px solid rgba(217,183,122,.6);border-radius:.8cqw;box-shadow:0 1cqw 3cqw rgba(0,0,0,.6);animation:room-caption-in .3s ease both}
+.room-dlg[hidden]{display:none}
+.room-dlg-head{display:flex;align-items:baseline;gap:1cqw}
+.room-dlg-who{font-family:'Cinzel',serif;font-weight:600;font-size:calc(max(14px,1.2cqw)*var(--ts));color:#f3e6c8}
+.room-dlg-prompt{flex:1;min-width:0;font-size:calc(max(12px,1cqw)*var(--ts));font-style:italic;color:#a99d84}
+.room-dlg-opts{display:flex;flex-direction:column;gap:.35cqw;overflow:auto}
+.room-dlg-opt{display:flex;align-items:center;gap:.7cqw;padding:.55cqw .9cqw;border:1px solid transparent;border-radius:.4cqw;background:transparent;font:inherit;font-size:calc(max(14px,1.15cqw)*var(--ts));color:#efe0bf;text-align:left;transition:background .2s,border-color .2s}
+.room-dlg-opt:before{content:'';flex:none;width:.5cqw;height:.5cqw;transform:rotate(45deg);border:1px solid #d9b77a}
+.room-dlg-opt:hover,.room-dlg-opt:focus-visible{background:rgba(217,183,122,.1);border-color:rgba(217,183,122,.4);outline:none}
+.room-dlg-opt.asked{color:#a99d84}
+.room-dlg-opt.asked:before{background:#d9b77a}
+.room-dlg-opt.bye{margin-top:.4cqw;color:#d9b77a;font-style:italic}
+.room-dlg-opt.bye:before{border-style:dashed}
+.room-frame.inv-open .room-dlg{bottom:max(72px,7.8cqw)}
 
 /* Fenêtres */
 .room-ov{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(6,4,3,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:scene-in .3s ease both}

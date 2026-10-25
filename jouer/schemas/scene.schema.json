@@ -79,7 +79,8 @@
       ]
     },
     "objects": { "type": "array", "items": { "$ref": "#/$defs/object" }, "description": "Ordre du tableau = ordre d'affichage (le dernier est au premier plan). Un personnage qui s'éloigne de son emplacement d'origine passe devant ou derrière les autres calques selon la hauteur de ses pieds." },
-    "panels": { "type": "object", "additionalProperties": { "$ref": "#/$defs/panel" }, "description": "Fiches d'examen ouvertes par l'action examine." }
+    "panels": { "type": "object", "additionalProperties": { "$ref": "#/$defs/panel" }, "description": "Fiches d'examen ouvertes par l'action examine." },
+    "dialogues": { "type": "object", "additionalProperties": { "$ref": "#/$defs/dialogue" }, "description": "Conversations à choix, ouvertes par l'action dialogue. Le menu des sujets s'affiche en bas de l'image ; chaque sujet joue un échange (voix + sous-titres) puis peut débloquer indices, variables ou scènes." }
   },
 
   "$defs": {
@@ -268,14 +269,42 @@
       }
     },
 
+    "dialogue": {
+      "type": "object",
+      "properties": {
+        "character": { "type": "string", "description": "Interlocuteur (shared/characters/<id>) : son nom s'affiche en tête du menu." },
+        "title": { "type": "string", "description": "Titre du menu (le nom du personnage si absent)." },
+        "prompt": { "type": "string", "description": "Consigne affichée au-dessus des sujets (« Que veux-tu lui demander ? »)." },
+        "bye": { "type": "string", "description": "Libellé du choix qui termine le dialogue (« C'est tout pour le moment. » par défaut)." },
+        "player": { "type": "string", "description": "Objet ou personnage joué, pour la bulle de l'interlocuteur. Déduit des zones de sol si absent." },
+        "empty": { "$ref": "#/$defs/actions", "description": "Joué quand plus aucun sujet n'est proposé (tous « once » épuisés ou conditions closes)." },
+        "onLeave": { "$ref": "#/$defs/actions", "description": "Joué quand le dialogue se termine." },
+        "topics": { "type": "array", "items": { "$ref": "#/$defs/topic" } }
+      }
+    },
+
+    "topic": {
+      "type": "object",
+      "required": ["label"],
+      "properties": {
+        "id": { "type": "string", "description": "Repère stable : la partie mémorise qu'il a été choisi (variable dlg.<scène>.<dialogue>.<id>, testable dans when)." },
+        "label": { "type": "string", "description": "Question ou réponse affichée dans le menu." },
+        "when": { "$ref": "#/$defs/condition", "description": "Le sujet n'est proposé que si la condition est vraie (ex. indice trouvé, autre sujet abordé)." },
+        "once": { "type": "boolean", "description": "true : le sujet disparaît une fois choisi. Sinon il reste, marqué comme déjà abordé." },
+        "end": { "type": "boolean", "description": "true : le dialogue se termine après cet échange au lieu de revenir au menu." },
+        "lines": { "$ref": "#/$defs/actions", "description": "L'échange : répliques voice (subtitle, jouées l'une après l'autre et adressées à l'autre partie par défaut), say (texte seul, temporisé), sfx, wait, if…" },
+        "then": { "$ref": "#/$defs/actions", "description": "Après l'échange : note (indice du carnet), person, memory, set (débloque d'autres sujets), objective, goto…" }
+      }
+    },
+
     "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
     "action": {
       "type": "object",
       "required": ["do"],
       "properties": {
         "do": {
-          "enum": ["say", "sfx", "voice", "animate", "setState", "cycleState", "set", "inc", "take", "give", "remove", "hide", "show", "note", "person", "memory", "objective", "examine", "popup", "panelNote", "close", "goto", "fadeOut", "wait", "if", "menu"],
-          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src, duration?} · voice {character?, to?, src | pool+pick, subtitle?, wait?} · animate {object, animation?, walk?, to?: [x, y], duration? | speed?, flip?, hold?, keep?, wait?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · person {character, text?} · memory {id, title, image?, text?} · objective {set?, complete?, once?} · examine {panel} · popup {kicker?, title, text | text[], button?} · panelNote {text} · close · goto {scene} · fadeOut {ms?, music?} · wait {ms} · if {cond, then[], else[]} · menu"
+          "enum": ["say", "sfx", "voice", "animate", "setState", "cycleState", "set", "inc", "take", "give", "remove", "hide", "show", "note", "person", "memory", "objective", "examine", "popup", "panelNote", "close", "goto", "fadeOut", "wait", "if", "dialogue", "menu"],
+          "description": "say {text | byState+texts, who?} · sfx {name: soft|click|ding | src, duration?} · voice {character?, to?, src | pool+pick, subtitle?, wait?} · animate {object, animation?, walk?, to?: [x, y], duration? | speed?, flip?, hold?, keep?, wait?} · setState {object, state} · cycleState {object, states[]} · set {var, value} · inc {var, by?} · take {object, item} · give/remove {item} · hide/show {object} · note {text} · person {character, text?} · memory {id, title, image?, text?} · objective {set?, complete?, once?} · examine {panel} · popup {kicker?, title, text | text[], button?} · panelNote {text} · close · goto {scene} · fadeOut {ms?, music?} · wait {ms} · if {cond, then[], else[]} · dialogue {id} · menu"
         }
       }
     },

@@ -33,7 +33,8 @@ function exploreSections(scope) {
       actionsField(scope, { label: 'À l’entrée (onEnter)', path: ['onEnter'], rows: 6 })),
     section('Données avancées',
       scope.json({ label: 'Décor (decor)', path: ['decor'], rows: 10, validate: validators.array, help: 'Formes, ombres et vignette. Modifiables aussi dans l’onglet Visuel (case « Afficher le décor »).' }),
-      scope.json({ label: 'Fiches d’examen (panels)', path: ['panels'], rows: 14, validate: validators.object, help: '{ "id": { "kicker", "title", "image": [{ "src", "when" }], "text", "facts": [ … ], "actions": [{ "label", "style", "when", "do": [ … ] }] } }' })),
+      scope.json({ label: 'Fiches d’examen (panels)', path: ['panels'], rows: 14, validate: validators.object, help: '{ "id": { "kicker", "title", "image": [{ "src", "when" }], "text", "facts": [ … ], "actions": [{ "label", "style", "when", "do": [ … ] }] } }' }),
+      scope.json({ label: 'Dialogues (dialogues)', path: ['dialogues'], rows: 10, validate: validators.object, help: 'Éditables aussi dans l’onglet Dialogues : { "id": { "character", "title"?, "prompt"?, "bye"?, "player"?, "empty"?, "onLeave"?, "topics": [{ "id"?, "label", "when"?, "once"?, "end"?, "lines": [ … ], "then": [ … ] }] } }' })),
   ];
 }
 
